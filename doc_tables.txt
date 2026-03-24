@@ -1,0 +1,189 @@
+
+--- TABLE 1 ---
+Layer	Technology
+Frontend	React.js + Tailwind CSS
+Backend	Node.js + Express.js
+Database	PostgreSQL
+Authentication	JWT + OTP (Twilio / Firebase)
+Payment Gateway	Razorpay API
+File Storage	AWS S3 / Cloudinary
+Email Service	NodeMailer + SendGrid
+Hosting	Vercel (FE) + Railway/Render (BE)
+
+--- TABLE 2 ---
+Route	Description
+/	Home / Landing page with job listing CTA
+/register	Candidate registration page
+/login	Candidate & HR login
+/jobs	Browse all active job listings
+/jobs/:id	Individual job detail page
+/apply/:id	Multi-step application form
+/payment/:id	Razorpay ₹50 payment page
+/dashboard	Candidate dashboard — status tracker
+/hr/dashboard	HR Admin panel
+/hr/applicants/:jobId	All applicants for a job
+/privacy-policy	Full privacy policy page
+/terms-of-service	Terms and conditions
+/refund-policy	Refund process and timeline
+/cookie-policy	Cookie usage details
+
+--- TABLE 3 ---
+Property	Value
+Color Palette	Navy Blue (#1E3A5F), White, Gold (#C9A84C)
+Typography	Arial / Inter — clean, professional
+Design Approach	Mobile-first, fully responsive
+Forms	Inline validation with error messages
+Notifications	Toast alerts for all async actions
+Loading States	Spinner on all API calls
+CTA Button	'Apply Now — ₹50 Refundable Fee'
+
+--- TABLE 4 ---
+Package	Purpose
+react-router-dom	Client-side routing
+axios	HTTP API calls
+@tanstack/react-query	Server state management & caching
+react-hook-form	Form handling and validation
+tailwindcss	Utility-first CSS framework
+razorpay-checkout	Razorpay JS SDK for payment modal
+react-hot-toast	Toast notifications
+react-dropzone	Drag-and-drop resume upload
+zod	Schema validation
+lucide-react	Icon library
+
+--- TABLE 5 ---
+Method + Endpoint	Description
+POST /register	Register new candidate (name, email, phone, password)
+POST /verify-otp	Verify OTP sent to phone/email
+POST /login	Login with email+password, returns JWT
+POST /hr/login	HR admin login
+POST /forgot-password	Send reset link to email
+POST /reset-password	Reset password with token
+
+--- TABLE 6 ---
+Method + Endpoint	Description
+GET /	Get all active job listings (public)
+GET /:id	Get single job details
+POST /	Create new job (HR only)
+PUT /:id	Update job listing (HR only)
+DELETE /:id	Delete job listing (HR only)
+
+--- TABLE 7 ---
+Method + Endpoint	Description
+POST /	Submit new application (requires paymentId)
+GET /my	Get all applications by logged-in candidate
+GET /job/:jobId	Get all applicants for a job (HR only)
+PATCH /:id/status	Update status: shortlisted/hired/rejected (HR only)
+
+--- TABLE 8 ---
+Method + Endpoint	Description
+POST /create-order	Create Razorpay order for ₹50 fee
+POST /verify	Verify Razorpay payment signature
+POST /refund/:applicationId	Trigger refund for rejected candidate (HR)
+GET /status/:applicationId	Check payment/refund status
+
+--- TABLE 9 ---
+Column	Type / Notes
+id	UUID, Primary Key
+full_name	VARCHAR(100), NOT NULL
+email	VARCHAR(100), UNIQUE, NOT NULL
+phone	VARCHAR(15), UNIQUE, NOT NULL
+password_hash	VARCHAR, bcrypt hashed
+role	ENUM: candidate, hr_admin
+is_verified	BOOLEAN, default false
+otp	VARCHAR(6), nullable
+otp_expires_at	TIMESTAMP
+created_at	TIMESTAMP, default NOW()
+
+--- TABLE 10 ---
+Column	Type / Notes
+id	UUID, Primary Key
+title	VARCHAR(150), NOT NULL
+description	TEXT
+department	VARCHAR(100)
+location	VARCHAR(100)
+job_type	ENUM: full_time, part_time, contract
+salary_range	VARCHAR(50)
+skills_required	TEXT[] — array of skill tags
+is_active	BOOLEAN, default true
+posted_by	UUID, FK → users.id
+created_at	TIMESTAMP
+
+--- TABLE 11 ---
+Column	Type / Notes
+id	UUID, Primary Key
+candidate_id	UUID, FK → users.id
+job_id	UUID, FK → jobs.id
+dob	DATE
+gender	ENUM: male, female, other
+city, state, pincode	VARCHAR
+qualification	VARCHAR(100)
+experience_years	INTEGER
+current_title	VARCHAR(100), nullable
+skills	TEXT[]
+resume_url	VARCHAR — S3/Cloudinary URL
+cover_letter	TEXT, nullable
+linkedin_url	VARCHAR, nullable
+payment_id	VARCHAR, Razorpay payment ID
+payment_status	ENUM: pending, paid, refund_initiated, refunded
+razorpay_order_id	VARCHAR
+refund_id	VARCHAR, nullable
+status	ENUM: under_review, shortlisted, hired, rejected
+created_at	TIMESTAMP
+
+--- TABLE 12 ---
+Middleware	Purpose
+authMiddleware	Verify JWT token on protected routes
+roleMiddleware	Check if user is hr_admin for HR routes
+multerMiddleware	Handle resume file uploads (multer + S3)
+rateLimiter	Prevent brute-force on auth routes
+errorHandler	Global error handler with proper HTTP codes
+corsMiddleware	Allow requests from frontend origin
+helmetMiddleware	Set security HTTP headers
+
+--- TABLE 13 ---
+Trigger Event	Notification Sent
+Registration	Email: OTP verification link
+Application Submitted	Email: Confirmation + Payment receipt
+Shortlisted	Email + SMS: Shortlist notification
+Hired	Email + SMS: Offer letter link + congratulations
+Rejected	Email + SMS: Rejection + refund initiated
+Refund Processed	Email: Refund confirmation with timeline
+
+--- TABLE 14 ---
+Package	Purpose
+express	Web server framework
+sequelize / prisma	ORM for PostgreSQL
+pg	PostgreSQL driver
+bcryptjs	Password hashing
+jsonwebtoken	JWT auth tokens
+razorpay	Razorpay Node.js SDK
+multer	File upload handling
+aws-sdk / @aws-sdk	S3 file storage
+nodemailer	Email sending
+twilio	SMS / OTP delivery
+helmet	Security HTTP headers
+express-rate-limit	Rate limiting
+dotenv	Environment variable management
+cors	Cross-origin resource sharing
+joi / zod	Request body validation
+
+--- TABLE 15 ---
+Requirement	Status / Notes
+HTTPS / SSL enforced sitewide	Required — configure on hosting
+GDPR-friendly data handling	Implemented via data retention + deletion
+Indian IT Act 2000 compliance	Privacy policy covers this
+Razorpay PCI-DSS compliance	Handled by Razorpay — no card storage
+Resume data encrypted at rest	AWS S3 server-side encryption
+Cookie consent banner	Implemented on first page load
+OTP-based account verification	Twilio / Firebase OTP integration
+Rate limiting on auth routes	express-rate-limit middleware
+JWT expiry + refresh tokens	Tokens expire in 24h
+File type validation	Only PDF/DOC, max 5MB
+
+--- TABLE 16 ---
+Service	Platform
+Frontend (React)	Vercel — auto-deploys from GitHub
+Backend (Node/Express)	Railway or Render — Docker or Node
+Database	Supabase (PostgreSQL) or Railway DB
+File Storage	AWS S3 or Cloudinary
+Domain + SSL	Cloudflare or Vercel custom domain

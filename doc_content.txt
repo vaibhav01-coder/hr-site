@@ -1,0 +1,199 @@
+HR HIRING PORTAL
+Complete Technical Documentation
+Frontend & Backend Architecture
+with ₹50 Refundable Application Fee System
+Version 1.0  |  2026
+
+
+1. Project Overview
+The HR Hiring Portal is a full-stack web application that enables companies to post jobs and allows candidates to apply online. The platform includes a refundable ₹50 application fee system — candidates pay before submitting, and if not selected, the fee is automatically refunded within 5–7 business days.
+
+1.1 Core Purpose
+Allow HR/Admin to post and manage job listings
+Allow candidates to register, browse jobs, and apply
+Collect ₹50 refundable fee before application submission
+Auto-refund rejected candidates via Razorpay API
+Maintain full privacy compliance (GDPR + Indian IT Act 2000)
+
+1.2 Tech Stack
+
+PART A — FRONTEND DOCUMENTATION
+2. Frontend Architecture
+2.1 Folder Structure
+/src
+components/     — Reusable UI components
+pages/          — Route-level page components
+hooks/          — Custom React hooks
+context/        — Global state (AuthContext, JobContext)
+services/       — API call functions (axios)
+utils/          — Helper functions
+assets/         — Images, icons, fonts
+styles/         — Global CSS / Tailwind config
+
+2.2 Page Routes
+
+2.3 Key Components
+2.3.1 ApplicationForm Component
+A multi-step form collecting:
+Step 1 — Personal Info: Name, Email, Phone, DOB, Gender, Address
+Step 2 — Professional Info: Qualification, Experience, Current Title, Skills, LinkedIn
+Step 3 — Resume Upload (PDF/DOC, max 5MB) + Cover Letter
+Step 4 — Preview & Submit (disabled until payment confirmed)
+
+2.3.2 PaymentGateway Component
+Handles ₹50 Razorpay checkout flow:
+Loads Razorpay script dynamically
+Creates order via backend API call
+Opens Razorpay modal with pre-filled candidate details
+On success: stores paymentId, enables application submission
+Displays security trust badges (PCI-DSS, SSL icons)
+
+2.3.3 StatusTracker Component
+Stepper UI shown on candidate dashboard:
+Step 1 — Application Submitted
+Step 2 — Under Review
+Step 3 — Shortlisted / Rejected
+Step 4 — Hired / Refund Initiated
+Step 5 — Refund Processed (3–5 business days)
+
+2.4 UI/UX Design Guidelines
+
+2.5 State Management
+React Context API for global auth state and user profile
+Local useState/useReducer for form steps
+React Query (TanStack) for server-state and caching
+localStorage for JWT token persistence
+
+2.6 API Integration
+All API calls are made using Axios with a base URL config:
+Auth endpoints: /api/auth/register, /api/auth/login, /api/auth/verify-otp
+Job endpoints: /api/jobs, /api/jobs/:id
+Application endpoints: /api/applications, /api/applications/:id/status
+Payment endpoints: /api/payment/create-order, /api/payment/verify
+HR endpoints: /api/hr/jobs, /api/hr/applicants/:jobId, /api/hr/update-status
+
+2.7 Frontend Dependencies
+
+PART B — BACKEND DOCUMENTATION
+3. Backend Architecture
+3.1 Folder Structure
+/server
+controllers/    — Route handler logic
+routes/         — Express route definitions
+models/         — Database models (Sequelize/Prisma)
+middleware/      — Auth, error handling, file upload
+services/        — Business logic (payment, email, refund)
+utils/           — Helpers, validators, constants
+config/          — DB, cloud, Razorpay config
+uploads/         — Temporary file storage before S3
+
+3.2 API Endpoints
+3.2.1 Authentication Routes — /api/auth
+
+3.2.2 Job Routes — /api/jobs
+
+3.2.3 Application Routes — /api/applications
+
+3.2.4 Payment Routes — /api/payment
+
+3.3 Database Schema
+3.3.1 Users Table
+
+3.3.2 Jobs Table
+
+3.3.3 Applications Table
+
+3.4 Payment & Refund Flow
+Step-by-step Razorpay Integration:
+1. Frontend calls POST /api/payment/create-order
+2. Backend creates Razorpay order (amount: 5000 paise = ₹50)
+3. Frontend opens Razorpay checkout modal
+4. On success, frontend calls POST /api/payment/verify
+5. Backend verifies HMAC signature using Razorpay secret
+6. On verification success: application is unlocked for submission
+7. When HR marks as Rejected: backend calls Razorpay Refund API
+8. Refund confirmation sent via email + SMS to candidate
+9. Refund timeline: 3–7 business days to source account
+
+3.5 Middleware
+
+3.6 Email & Notification Events
+
+3.7 Backend Dependencies
+
+4. Privacy Policy & Legal Pages
+4.1 Privacy Policy  — /privacy-policy
+Data We Collect
+Full name, email, phone number, date of birth, gender, address
+Professional information: qualifications, experience, skills
+Resume and cover letter content
+Payment transaction ID (NOT card details — handled by Razorpay)
+Session cookies for authentication
+
+How We Use Your Data
+Processing job applications only
+Sending notifications on application status
+Processing ₹50 fee and refunds
+We NEVER sell data to third parties
+
+Payment Data Security
+All payments processed via Razorpay (PCI-DSS Level 1 certified)
+We do not store any card or banking details on our servers
+Only Razorpay Payment ID and Order ID are stored
+
+Data Retention Policy
+Hired candidates: data retained for 2 years
+Rejected/Not Selected candidates: data deleted after 90 days
+Resume files: encrypted at rest on AWS S3
+Candidates can request data deletion at privacy@[yoursite].com
+
+Candidate Rights
+Right to access personal data collected
+Right to edit or update profile information
+Right to request complete data deletion
+Right to know refund status at any time
+
+4.2 Refund Policy  — /refund-policy
+₹50 application fee is fully refundable if candidate is not selected
+Refund is triggered automatically when HR marks status as 'Rejected'
+Refunds are processed within 5–7 business days to the original payment source
+Candidates receive email + SMS confirmation when refund is initiated
+If hired, the ₹50 fee is non-refundable and treated as a processing charge
+For disputes, contact refunds@[yoursite].com within 30 days
+
+4.3 Terms of Service  — /terms-of-service
+Candidates must provide accurate, truthful information
+Uploading fraudulent resumes will result in permanent ban
+₹50 fee must be paid before any application is submitted
+HR admins must not discriminate on any protected characteristic
+Platform is governed by Indian law and IT Act 2000
+Anthropic reserves the right to remove any listing or account
+
+4.4 Cookie Policy  — /cookie-policy
+Session cookies only — used for login state management
+No tracking cookies or third-party advertising cookies
+Cookie consent banner shown on first visit
+Users can clear cookies from browser settings at any time
+
+5. Compliance Checklist
+
+6. Deployment Guide
+6.1 Environment Variables
+Backend .env file must include:
+DATABASE_URL — PostgreSQL connection string
+JWT_SECRET — Strong random secret for signing tokens
+RAZORPAY_KEY_ID — From Razorpay dashboard
+RAZORPAY_KEY_SECRET — From Razorpay dashboard
+AWS_ACCESS_KEY_ID — For S3 resume storage
+AWS_SECRET_ACCESS_KEY — For S3
+AWS_S3_BUCKET — Bucket name
+SENDGRID_API_KEY — For email notifications
+TWILIO_ACCOUNT_SID — For SMS/OTP
+TWILIO_AUTH_TOKEN — For Twilio
+FRONTEND_URL — For CORS whitelist
+
+6.2 Deployment Platforms
+
+
+END OF DOCUMENT
+HR Hiring Portal — Confidential Technical Documentation — v1.0 — 2026

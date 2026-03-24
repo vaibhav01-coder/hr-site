@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Damor HR Portal — Find Your Next Opportunity</title>
+    <meta name="description" content="Apply for top jobs with Damor HR Portal. Browse openings in Gujarat, submit applications, and track your status — all with a fully refundable ₹50 application fee. Contact: 6351439792">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Razorpay Checkput -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <!-- Cookie Consent Banner -->
+    <div id="cookie-banner" class="cookie-banner">
+        <div class="cookie-content">
+            <div class="cookie-icon">🍪</div>
+            <div class="cookie-text">
+                <p>We use <strong>session cookies only</strong> for login state management. No tracking or advertising cookies.</p>
+            </div>
+            <div class="cookie-actions">
+                <button id="accept-cookies" class="btn btn-primary btn-sm">Accept</button>
+                <a href="#" onclick="showPage('cookie-policy'); return false;" class="cookie-link">Learn More</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav id="navbar" class="navbar">
+        <div class="nav-container">
+            <a href="#" onclick="showPage('home'); return false;" class="nav-logo" id="nav-logo">
+                <div class="logo-icon">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="8" fill="url(#logo-grad)"/>
+                        <path d="M8 12h6v8H8zM18 8h6v12h-6z" fill="white" opacity="0.9"/>
+                        <path d="M14 16h4" stroke="white" stroke-width="2"/>
+                        <defs><linearGradient id="logo-grad" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#1E3A5F"/><stop offset="1" stop-color="#C9A84C"/></linearGradient></defs>
+                    </svg>
+                </div>
+                <span class="logo-text">Damor HR</span>
+            </a>
+            <div class="nav-links" id="nav-links">
+                <a href="#" onclick="showPage('home'); return false;" class="nav-link active" data-page="home">Home</a>
+                <a href="#" onclick="showPage('jobs'); return false;" class="nav-link" data-page="jobs">Jobs</a>
+                <a href="#" onclick="showPage('dashboard'); return false;" class="nav-link" data-page="dashboard">Dashboard</a>
+                <a href="#" onclick="showPage('hr-dashboard'); return false;" class="nav-link" data-page="hr-dashboard">HR Panel</a>
+            </div>
+            <div class="nav-actions">
+                <button class="btn btn-outline btn-sm" id="login-btn" onclick="showPage('login'); return false;">Login</button>
+                <button class="btn btn-primary btn-sm" id="register-btn" onclick="showPage('register'); return false;">Register</button>
+                <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ==================== HOME PAGE ==================== -->
+    <main id="page-home" class="page active">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-bg">
+                <div class="hero-gradient"></div>
+                <div class="hero-particles" id="hero-particles"></div>
+            </div>
+            <div class="hero-content">
+                <div class="hero-badge animate-fade-up">
+                    <span class="badge-dot"></span>
+                    <span>Trusted by 500+ Companies in Gujarat</span>
+                </div>
+                <h1 class="hero-title animate-fade-up delay-1">
+                    Find Your <span class="gradient-text">Dream Job</span><br>
+                    With Confidence
+                </h1>
+                <p class="hero-subtitle animate-fade-up delay-2">
+                    Apply for top positions in Sanand, Ahmedabad & Gujarat with our secure hiring platform. Your ₹50 application fee is <strong>fully refundable</strong> if not selected — zero risk, maximum opportunity.
+                </p>
+                <div class="hero-cta animate-fade-up delay-3">
+                    <button class="btn btn-primary btn-lg" onclick="showPage('jobs')">
+                        Browse Jobs
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </button>
+                    <button class="btn btn-glass btn-lg" onclick="showPage('register')">
+                        Create Account
+                    </button>
+                </div>
+                <div class="hero-stats animate-fade-up delay-4">
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="2500">0</span><span class="stat-suffix">+</span>
+                        <span class="stat-label">Jobs Posted</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="15000">0</span><span class="stat-suffix">+</span>
+                        <span class="stat-label">Candidates Hired</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="98">0</span><span class="stat-suffix">%</span>
+                        <span class="stat-label">Refund Success</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section class="section how-it-works">
+            <div class="container">
+                <div class="section-header">
+                    <span class="section-badge">Simple Process</span>
+                    <h2 class="section-title">How It <span class="gradient-text">Works</span></h2>
+                    <p class="section-subtitle">Four simple steps to your next career move</p>
+                </div>
+                <div class="steps-grid">
+                    <div class="step-card" data-step="1">
+                        <div class="step-number">01</div>
+                        <div class="step-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </div>
+                        <h3>Register & Browse</h3>
+                        <p>Create your profile and explore hundreds of active job listings from top companies in Gujarat.</p>
+                    </div>
+                    <div class="step-card" data-step="2">
+                        <div class="step-number">02</div>
+                        <div class="step-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        </div>
+                        <h3>Apply with ₹50 Fee</h3>
+                        <p>Fill in your details, upload resume, and pay a refundable ₹50 via Razorpay secure checkout.</p>
+                    </div>
+                    <div class="step-card" data-step="3">
+                        <div class="step-number">03</div>
+                        <div class="step-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        </div>
+                        <h3>Get Reviewed</h3>
+                        <p>HR reviews your application. Track your status in real-time on your personal dashboard.</p>
+                    </div>
+                    <div class="step-card" data-step="4">
+                        <div class="step-number">04</div>
+                        <div class="step-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                        </div>
+                        <h3>Hired or Refunded</h3>
+                        <p>Selected? Congratulations! Not selected? Your ₹50 is refunded within 5-7 business days.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Jobs -->
+        <section class="section featured-jobs">
+            <div class="container">
+                <div class="section-header">
+                    <span class="section-badge">Opportunities</span>
+                    <h2 class="section-title">Featured <span class="gradient-text">Positions</span></h2>
+                    <p class="section-subtitle">Latest openings from leading organizations in Gujarat</p>
+                </div>
+                <div class="jobs-grid" id="featured-jobs-grid">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="section-cta">
+                    <button class="btn btn-primary btn-lg" onclick="showPage('jobs')">
+                        View All Jobs
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Trust Section -->
+        <section class="section trust-section">
+            <div class="container">
+                <div class="trust-grid">
+                    <div class="trust-card">
+                        <div class="trust-icon">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        </div>
+                        <h3>PCI-DSS Compliant</h3>
+                        <p>Payments processed by Razorpay Level 1 certified gateway. Your card details never touch our servers.</p>
+                    </div>
+                    <div class="trust-card">
+                        <div class="trust-icon">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        </div>
+                        <h3>GDPR & IT Act 2000</h3>
+                        <p>Full compliance with Indian IT Act and GDPR. Your data is encrypted, protected, and deletable on request.</p>
+                    </div>
+                    <div class="trust-card">
+                        <div class="trust-icon">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        </div>
+                        <h3>100% Refund Guarantee</h3>
+                        <p>Not selected? Your ₹50 is automatically refunded within 5-7 business days. Zero risk.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-brand">
+                        <div class="nav-logo">
+                            <div class="logo-icon">
+                                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                                    <rect width="32" height="32" rx="8" fill="url(#logo-grad2)"/>
+                                    <path d="M8 12h6v8H8zM18 8h6v12h-6z" fill="white" opacity="0.9"/>
+                                    <path d="M14 16h4" stroke="white" stroke-width="2"/>
+                                    <defs><linearGradient id="logo-grad2" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#1E3A5F"/><stop offset="1" stop-color="#C9A84C"/></linearGradient></defs>
+                                </svg>
+                            </div>
+                            <span class="logo-text">Damor HR</span>
+                        </div>
+                        <p class="footer-desc">The trusted hiring platform with a refundable application fee system. Your career, our commitment. Contact Arvind Sir: 6351439792</p>
+                    </div>
+                    <div class="footer-links">
+                        <h4>For Candidates</h4>
+                        <a href="#" onclick="showPage('jobs'); return false;">Browse Jobs</a>
+                        <a href="#" onclick="showPage('register'); return false;">Register</a>
+                        <a href="#" onclick="showPage('dashboard'); return false;">My Dashboard</a>
+                    </div>
+                    <div class="footer-links">
+                        <h4>Company</h4>
+                        <a href="#" onclick="showPage('privacy-policy'); return false;">Privacy Policy</a>
+                        <a href="#" onclick="showPage('refund-policy'); return false;">Refund Policy</a>
+                        <a href="#" onclick="showPage('terms-of-service'); return false;">Terms of Service</a>
+                        <a href="#" onclick="showPage('cookie-policy'); return false;">Cookie Policy</a>
+                    </div>
+                    <div class="footer-links">
+                        <h4>Contact</h4>
+                        <a href="tel:6351439792">📞 6351439792 (Arvind Sir)</a>
+                        <a href="mailto:privacy@damorhr.com">privacy@damorhr.com</a>
+                        <a href="mailto:refunds@damorhr.com">refunds@damorhr.com</a>
+                        <a href="mailto:support@damorhr.com">support@damorhr.com</a>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2026 Damor HR Portal. All rights reserved.</p>
+                    <div class="footer-badges">
+                        <span class="footer-badge">🔒 SSL Secured</span>
+                        <span class="footer-badge">🛡️ PCI-DSS</span>
+                        <span class="footer-badge">✅ GDPR</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- ==================== JOBS PAGE ==================== -->
+    <main id="page-jobs" class="page">
+        <section class="page-header">
+            <div class="container">
+                <h1 class="page-title">Job <span class="gradient-text">Listings</span></h1>
+                <p class="page-subtitle">Explore active positions in Gujarat — Direct Joining Available</p>
+            </div>
+        </section>
+        <section class="section">
+            <div class="container">
+                <!-- Search & Filters -->
+                <div class="jobs-filters">
+                    <div class="search-bar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                        <input type="text" id="job-search" placeholder="Search by title, skill, or location..." class="search-input">
+                    </div>
+                    <div class="filter-chips">
+                        <button class="chip active" data-filter="all" onclick="filterJobs('all')">All</button>
+                        <button class="chip" data-filter="full_time" onclick="filterJobs('full_time')">Full Time</button>
+                        <button class="chip" data-filter="part_time" onclick="filterJobs('part_time')">Part Time</button>
+                        <button class="chip" data-filter="contract" onclick="filterJobs('contract')">Contract</button>
+                    </div>
+                </div>
+                <div class="jobs-list" id="jobs-list">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== JOB DETAIL PAGE ==================== -->
+    <main id="page-job-detail" class="page">
+        <section class="section">
+            <div class="container">
+                <div class="job-detail-layout">
+                    <div class="job-detail-main" id="job-detail-content">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div class="job-detail-sidebar" id="job-detail-sidebar">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== APPLICATION PAGE ==================== -->
+    <main id="page-apply" class="page">
+        <section class="section">
+            <div class="container container-sm">
+                <div class="form-card">
+                    <div class="form-header">
+                        <h1 class="form-title">Apply for Position</h1>
+                        <p class="form-subtitle" id="apply-job-title">Loading...</p>
+                    </div>
+                    <!-- Stepper -->
+                    <div class="stepper">
+                        <div class="step active" data-step="1">
+                            <div class="step-circle">1</div>
+                            <span>Personal</span>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step" data-step="2">
+                            <div class="step-circle">2</div>
+                            <span>Professional</span>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step" data-step="3">
+                            <div class="step-circle">3</div>
+                            <span>Documents</span>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step" data-step="4">
+                            <div class="step-circle">4</div>
+                            <span>Review & Pay</span>
+                        </div>
+                    </div>
+
+                    <!-- Step 1: Personal Info -->
+                    <div class="form-step active" id="form-step-1">
+                        <h2 class="step-title">Personal Information</h2>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="app-name">Full Name *</label>
+                                <input type="text" id="app-name" placeholder="Enter your full name" required>
+                                <span class="form-error" id="err-name"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="app-email">Email Address *</label>
+                                <input type="email" id="app-email" placeholder="your@email.com" required>
+                                <span class="form-error" id="err-email"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="app-phone">Phone Number *</label>
+                                <input type="tel" id="app-phone" placeholder="+91 XXXXX XXXXX" required>
+                                <span class="form-error" id="err-phone"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="app-dob">Date of Birth *</label>
+                                <input type="date" id="app-dob" required>
+                                <span class="form-error" id="err-dob"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="app-gender">Gender *</label>
+                                <select id="app-gender" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                                <span class="form-error" id="err-gender"></span>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="app-address">Address *</label>
+                                <input type="text" id="app-address" placeholder="City, State, Pincode" required>
+                                <span class="form-error" id="err-address"></span>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <div></div>
+                            <button class="btn btn-primary" onclick="nextStep(1)">Next Step →</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Professional Info -->
+                    <div class="form-step" id="form-step-2">
+                        <h2 class="step-title">Professional Information</h2>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="app-qualification">Highest Qualification *</label>
+                                <select id="app-qualification" required>
+                                    <option value="">Select Qualification</option>
+                                    <option value="10th_pass">10th Pass</option>
+                                    <option value="12th_pass">12th Pass</option>
+                                    <option value="iti">ITI</option>
+                                    <option value="diploma">Diploma</option>
+                                    <option value="bachelors">Bachelor's Degree</option>
+                                    <option value="masters">Master's Degree</option>
+                                    <option value="phd">PhD</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="app-experience">Years of Experience *</label>
+                                <input type="number" id="app-experience" placeholder="e.g., 3" min="0" max="50" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="app-current-title">Current Job Title</label>
+                                <input type="text" id="app-current-title" placeholder="e.g., Machine Operator">
+                            </div>
+                            <div class="form-group">
+                                <label for="app-linkedin">LinkedIn Profile</label>
+                                <input type="url" id="app-linkedin" placeholder="https://linkedin.com/in/yourname">
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="app-skills">Skills * <span class="form-hint">(comma separated)</span></label>
+                                <input type="text" id="app-skills" placeholder="e.g., Machine Operation, Quality Check, Assembly, Welding" required>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-outline" onclick="prevStep(2)">← Previous</button>
+                            <button class="btn btn-primary" onclick="nextStep(2)">Next Step →</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Documents -->
+                    <div class="form-step" id="form-step-3">
+                        <h2 class="step-title">Resume & Cover Letter</h2>
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label>Resume * <span class="form-hint">(PDF or DOC, max 5MB)</span></label>
+                                <div class="file-upload-zone" id="resume-dropzone">
+                                    <div class="upload-icon">
+                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    </div>
+                                    <p class="upload-text">Drag & drop your resume here or <span class="upload-link">browse</span></p>
+                                    <p class="upload-hint">PDF or DOC format, max 5MB</p>
+                                    <input type="file" id="app-resume" accept=".pdf,.doc,.docx" hidden>
+                                    <div class="upload-preview" id="resume-preview" style="display:none;">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+                                        <span id="resume-filename"></span>
+                                        <button class="upload-remove" onclick="removeFile()">&times;</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="app-cover-letter">Cover Letter <span class="form-hint">(optional)</span></label>
+                                <textarea id="app-cover-letter" rows="6" placeholder="Tell us why you're the perfect fit for this role..."></textarea>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-outline" onclick="prevStep(3)">← Previous</button>
+                            <button class="btn btn-primary" onclick="nextStep(3)">Next Step →</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Review & Pay -->
+                    <div class="form-step" id="form-step-4">
+                        <h2 class="step-title">Review & Submit</h2>
+                        <div class="review-section">
+                            <div class="review-card">
+                                <h3>Personal Information</h3>
+                                <div class="review-grid" id="review-personal"></div>
+                            </div>
+                            <div class="review-card">
+                                <h3>Professional Information</h3>
+                                <div class="review-grid" id="review-professional"></div>
+                            </div>
+                            <div class="review-card">
+                                <h3>Documents</h3>
+                                <div class="review-grid" id="review-documents"></div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Section -->
+                        <div class="payment-section">
+                            <div class="payment-card">
+                                <div class="payment-header">
+                                    <h3>Application Fee</h3>
+                                    <div class="payment-amount">₹50</div>
+                                </div>
+                                <p class="payment-note">
+                                    💡 ₹50 will be fully refunded if you are not selected.
+                                </p>
+                                <div class="payment-badges">
+                                    <span class="pay-badge">🔒 SSL Encrypted</span>
+                                    <span class="pay-badge">🛡️ PCI-DSS Level 1</span>
+                                    <span class="pay-badge">✅ Razorpay Secure</span>
+                                </div>
+                                <button class="btn btn-gold btn-lg full-width" id="pay-btn" onclick="simulatePayment()">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                                    Pay ₹50 & Submit Application
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="btn btn-outline" onclick="prevStep(4)">← Previous</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== REGISTER PAGE ==================== -->
+    <main id="page-register" class="page">
+        <section class="auth-section">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <h1>Create Account</h1>
+                    <p>Join thousands of professionals finding their next role in Gujarat</p>
+                </div>
+                <form id="register-form" onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label for="reg-name">Full Name</label>
+                        <input type="text" id="reg-name" placeholder="Enter your full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-email">Email Address</label>
+                        <input type="email" id="reg-email" placeholder="your@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-phone">Phone Number</label>
+                        <input type="tel" id="reg-phone" placeholder="+91 XXXXX XXXXX" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">Password</label>
+                        <input type="password" id="reg-password" placeholder="Min 8 characters" required minlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-role">Register As</label>
+                        <select id="reg-role">
+                            <option value="candidate">Candidate</option>
+                            <option value="hr_admin">HR Admin</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg full-width">Create Account</button>
+                </form>
+                <p class="auth-footer">Already have an account? <a href="#" onclick="showPage('login'); return false;">Login here</a></p>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== OTP VERIFICATION PAGE ==================== -->
+    <main id="page-verify-otp" class="page">
+        <section class="auth-section">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="otp-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                    </div>
+                    <h1>Verify Your Account</h1>
+                    <p>Enter the 6-digit OTP sent to your phone/email</p>
+                </div>
+                <div class="otp-inputs" id="otp-inputs">
+                    <input type="text" maxlength="1" class="otp-input" data-index="0">
+                    <input type="text" maxlength="1" class="otp-input" data-index="1">
+                    <input type="text" maxlength="1" class="otp-input" data-index="2">
+                    <input type="text" maxlength="1" class="otp-input" data-index="3">
+                    <input type="text" maxlength="1" class="otp-input" data-index="4">
+                    <input type="text" maxlength="1" class="otp-input" data-index="5">
+                </div>
+                <button class="btn btn-primary btn-lg full-width" onclick="verifyOTP()" id="verify-otp-btn">Verify OTP</button>
+                <p class="auth-footer">Didn't receive? <a href="#" onclick="resendOTP(); return false;">Resend OTP</a></p>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== LOGIN PAGE ==================== -->
+    <main id="page-login" class="page">
+        <section class="auth-section">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <h1>Welcome Back</h1>
+                    <p>Sign in to your Damor HR Portal account</p>
+                </div>
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="login-email">Email Address</label>
+                        <input type="email" id="login-email" placeholder="your@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" placeholder="Enter your password" required>
+                    </div>
+                    <div class="form-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="remember-me">
+                            <span>Remember me</span>
+                        </label>
+                        <a href="#" class="link-text" onclick="showPage('forgot-password'); return false;">Forgot Password?</a>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg full-width">Sign In</button>
+                </form>
+                <p class="auth-footer">Don't have an account? <a href="#" onclick="showPage('register'); return false;">Register here</a></p>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== FORGOT PASSWORD PAGE ==================== -->
+    <main id="page-forgot-password" class="page">
+        <section class="auth-section">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <h1>Reset Password</h1>
+                    <p>Enter your email to receive a password reset link</p>
+                </div>
+                <form onsubmit="handleForgotPassword(event)">
+                    <div class="form-group">
+                        <label for="forgot-email">Email Address</label>
+                        <input type="email" id="forgot-email" placeholder="your@email.com" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg full-width">Send Reset Link</button>
+                </form>
+                <p class="auth-footer">Remember your password? <a href="#" onclick="showPage('login'); return false;">Back to Login</a></p>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== CANDIDATE DASHBOARD ==================== -->
+    <main id="page-dashboard" class="page">
+        <section class="page-header">
+            <div class="container">
+                <h1 class="page-title">My <span class="gradient-text">Dashboard</span></h1>
+                <p class="page-subtitle">Track your applications and their status</p>
+            </div>
+        </section>
+        <section class="section">
+            <div class="container">
+                <div class="dashboard-stats">
+                    <div class="dash-stat-card">
+                        <div class="dash-stat-icon blue">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+                        </div>
+                        <div class="dash-stat-info">
+                            <span class="dash-stat-value">3</span>
+                            <span class="dash-stat-label">Total Applications</span>
+                        </div>
+                    </div>
+                    <div class="dash-stat-card">
+                        <div class="dash-stat-icon yellow">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </div>
+                        <div class="dash-stat-info">
+                            <span class="dash-stat-value">1</span>
+                            <span class="dash-stat-label">Under Review</span>
+                        </div>
+                    </div>
+                    <div class="dash-stat-card">
+                        <div class="dash-stat-icon green">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        </div>
+                        <div class="dash-stat-info">
+                            <span class="dash-stat-value">1</span>
+                            <span class="dash-stat-label">Shortlisted</span>
+                        </div>
+                    </div>
+                    <div class="dash-stat-card">
+                        <div class="dash-stat-icon purple">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
+                        </div>
+                        <div class="dash-stat-info">
+                            <span class="dash-stat-value">₹50</span>
+                            <span class="dash-stat-label">Refund Initiated</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Application Cards -->
+                <div class="dashboard-applications" id="dashboard-apps">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== HR DASHBOARD ==================== -->
+    <main id="page-hr-dashboard" class="page">
+        <section class="page-header">
+            <div class="container">
+                <h1 class="page-title">HR <span class="gradient-text">Admin Panel</span></h1>
+                <p class="page-subtitle">Manage job listings and review applicants</p>
+            </div>
+        </section>
+        <section class="section">
+            <div class="container">
+                <div class="hr-tabs">
+                    <button class="hr-tab active" onclick="switchHRTab('jobs')">Posted Jobs</button>
+                    <button class="hr-tab" onclick="switchHRTab('applicants')">Applicants</button>
+                    <button class="hr-tab" onclick="switchHRTab('create')">Create Job</button>
+                </div>
+
+                <!-- HR Jobs Tab -->
+                <div class="hr-tab-content active" id="hr-tab-jobs">
+                    <div class="hr-jobs-list" id="hr-jobs-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- HR Applicants Tab -->
+                <div class="hr-tab-content" id="hr-tab-applicants">
+                    <div class="applicants-table-wrapper">
+                        <table class="applicants-table" id="applicants-table">
+                            <thead>
+                                <tr>
+                                    <th>Candidate</th>
+                                    <th>Position</th>
+                                    <th>Experience</th>
+                                    <th>Applied</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="applicants-tbody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- HR Create Job Tab -->
+                <div class="hr-tab-content" id="hr-tab-create">
+                    <div class="form-card">
+                        <h2 class="step-title">Create New Job Listing</h2>
+                        <form id="create-job-form" onsubmit="handleCreateJob(event)">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="job-title">Job Title *</label>
+                                    <input type="text" id="job-title" placeholder="e.g., Machine Operator" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="job-department">Department *</label>
+                                    <input type="text" id="job-department" placeholder="e.g., Production" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="job-location">Location *</label>
+                                    <input type="text" id="job-location" placeholder="e.g., Sanand, Gujarat" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="job-type">Job Type *</label>
+                                    <select id="job-type" required>
+                                        <option value="full_time">Full Time</option>
+                                        <option value="part_time">Part Time</option>
+                                        <option value="contract">Contract</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="job-salary">Salary Range</label>
+                                    <input type="text" id="job-salary" placeholder="e.g., ₹14,160 - ₹23,200/month">
+                                </div>
+                                <div class="form-group">
+                                    <label for="job-skills">Required Skills</label>
+                                    <input type="text" id="job-skills" placeholder="e.g., Machine Operation, Quality Check">
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="job-description">Job Description *</label>
+                                    <textarea id="job-description" rows="6" placeholder="Describe the role, responsibilities, and requirements..." required></textarea>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <div></div>
+                                <button type="submit" class="btn btn-primary btn-lg">Post Job Listing</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== PRIVACY POLICY ==================== -->
+    <main id="page-privacy-policy" class="page">
+        <section class="page-header">
+            <div class="container">
+                <h1 class="page-title">Privacy <span class="gradient-text">Policy</span></h1>
+                <p class="page-subtitle">How we collect, use, and protect your data</p>
+            </div>
+        </section>
+        <section class="section">
+            <div class="container container-sm">
+                <div class="legal-content">
+                    <div class="legal-card">
+                        <h2>Data We Collect</h2>
+                        <ul>
+                            <li>Full name, email, phone number, date of birth, gender, address</li>
+                            <li>Professional information: qualifications, experience, skills</li>
+                            <li>Resume and cover letter content</li>
+                            <li>Payment transaction ID (NOT card details — handled by Razorpay)</li>
+                            <li>Session cookies for authentication</li>
+                        </ul>
+                    </div>
+                    <div class="legal-card">
+                        <h2>How We Use Your Data</h2>
+                        <ul>
+                            <li>Processing job applications only</li>
+                            <li>Sending notifications on application status</li>
+                            <li>Processing ₹50 fee and refunds</li>
+                            <li><strong>We NEVER sell data to third parties</strong></li>
+                        </ul>
+                    </div>
+                    <div class="legal-card">
+                        <h2>Payment Data Security</h2>
+                        <ul>
+                            <li>All payments processed via Razorpay (PCI-DSS Level 1 certified)</li>
+                            <li>We do not store any card or banking details on our servers</li>
+                            <li>Only Razorpay Payment ID and Order ID are stored</li>
+                        </ul>
+                    </div>
+                    <div class="legal-card">
+                        <h2>Data Retention Policy</h2>
+                        <ul>
+                            <li>Hired candidates: data retained for 2 years</li>
+                            <li>Rejected/Not Selected candidates: data deleted after 90 days</li>
+                            <li>Resume files: encrypted at rest on AWS S3</li>
+                            <li>Candidates can request data deletion at <a href="mailto:privacy@damorhr.com">privacy@damorhr.com</a></li>
+                        </ul>
+                    </div>
+                    <div class="legal-card">
+                        <h2>Candidate Rights</h2>
+                        <ul>
+                            <li>Right to access personal data collected</li>
+                            <li>Right to edit or update profile information</li>
+                            <li>Right to request complete data deletion</li>
+                            <li>Right to know refund status at any time</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== REFUND POLICY ==================== -->
+    <main id="page-refund-policy" class="page">
+        <section class="page-header">
+            <div class="container">
+                <h1 class="page-title">Refund <span class="gradient-text">Policy</span></h1>
+                <p class="page-subtitle">Our transparent refund process</p>
+            </div>
+        </section>
+        <section class="section">
+            <div class="container container-sm">
+                <div class="legal-content">
+                    <div class="legal-card highlight">
+                        <div class="refund-badge">₹50 Fully Refundable</div>
+                        <ul>
+                            <li>₹50 application fee is <strong>fully refundable</strong> if candidate is not selected</li>
+                            <li>Refund is triggered <strong>automatically</strong> when HR marks status as "Rejected"</li>
+                            <li>Refunds are processed within <strong>5–7 business days</strong> to the original payment source</li>
+                            <li>Candidates receive <strong>email + SMS confirmation</strong> when refund is initiated</li>
+                            <li>If hired, the ₹50 fee is non-refundable and treated as a processing charge</li>
+                            <li>For disputes, contact <a href="mailto:refunds@damorhr.com">refunds@damorhr.com</a> within 30 days</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== TERMS OF SERVICE ==================== -->
+    <main id="page-terms-of-service" class="page">
+        <section class="page-header">
+            <div class="container">
+                <h1 class="page-title">Terms of <span class="gradient-text">Service</span></h1>
+                <p class="page-subtitle">Please read these terms carefully before using our platform</p>
+            </div>
+        </section>
+        <section class="section">
+            <div class="container container-sm">
+                <div class="legal-content">
+                    <div class="legal-card">
+                        <ul>
+                            <li>Candidates must provide accurate, truthful information</li>
+                            <li>Uploading fraudulent resumes will result in permanent ban</li>
+                            <li>₹50 fee must be paid before any application is submitted</li>
+                            <li>HR admins must not discriminate on any protected characteristic</li>
+                            <li>Platform is governed by Indian law and IT Act 2000</li>
+                            <li>Damor HR Portal reserves the right to remove any listing or account</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== COOKIE POLICY ==================== -->
+    <main id="page-cookie-policy" class="page">
+        <section class="page-header">
+            <div class="container">
+                <h1 class="page-title">Cookie <span class="gradient-text">Policy</span></h1>
+                <p class="page-subtitle">How we use cookies on our platform</p>
+            </div>
+        </section>
+        <section class="section">
+            <div class="container container-sm">
+                <div class="legal-content">
+                    <div class="legal-card">
+                        <ul>
+                            <li><strong>Session cookies only</strong> — used for login state management</li>
+                            <li>No tracking cookies or third-party advertising cookies</li>
+                            <li>Cookie consent banner shown on first visit</li>
+                            <li>Users can clear cookies from browser settings at any time</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Payment Success Modal -->
+    <div class="modal-overlay" id="payment-modal" style="display:none;">
+        <div class="modal-card">
+            <div class="modal-icon success">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <h2>Payment Successful!</h2>
+            <p>Your ₹50 application fee has been received. Your application has been submitted successfully.</p>
+            <div class="modal-details">
+                <div class="modal-detail-row"><span>Payment ID:</span><span id="modal-payment-id">pay_demo_123456</span></div>
+                <div class="modal-detail-row"><span>Amount:</span><span>₹50.00</span></div>
+                <div class="modal-detail-row"><span>Status:</span><span class="status-badge status-paid">Paid</span></div>
+            </div>
+            <button class="btn btn-primary btn-lg full-width" onclick="closePaymentModal()">Go to Dashboard</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
