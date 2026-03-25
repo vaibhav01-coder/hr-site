@@ -14,12 +14,13 @@
         <section class="surface auth-card">
             <span class="eyebrow">Login</span>
             <h1>Candidate and HR sign in</h1>
-            <p>Frontend preview for /login and /hr/login experiences.</p>
+            <p>Sign in with Supabase email and password.</p>
             <form id="login-form" class="auth-form">
-                <label class="field"><span>Email Address</span><input type="email" required></label>
-                <label class="field"><span>Password</span><input type="password" required></label>
+                <label class="field"><span>Email Address</span><input id="login-email" type="email" required></label>
+                <label class="field"><span>Password</span><input id="login-password" type="password" required></label>
                 <button type="submit" class="btn btn-primary full-width">Login</button>
             </form>
+            <p class="muted-line" id="login-status">Use the same credentials created during registration.</p>
             <div class="auth-links">
                 <a href="register.html">Create Account</a>
                 <a href="dashboard.html">Candidate Dashboard</a>
@@ -28,6 +29,8 @@
         </section>
     </main>
     <div id="toast-root" class="toast-root"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

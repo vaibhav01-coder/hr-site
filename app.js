@@ -63,6 +63,15 @@ const qs = (selector) => document.querySelector(selector);
 const qsa = (selector) => [...document.querySelectorAll(selector)];
 const params = () => new URLSearchParams(window.location.search);
 const getJob = (jobId) => jobs.find((job) => job.id === jobId) || jobs[0];
+let supabaseClient = null;
+
+function getSupabaseClient() {
+    if (supabaseClient) return supabaseClient;
+    const config = window.HR_SUPABASE_CONFIG;
+    if (!window.supabase || !config || !config.url || !config.anonKey) return null;
+    supabaseClient = window.supabase.createClient(config.url, config.anonKey);
+    return supabaseClient;
+}
 
 function toast(message) {
     const root = qs("#toast-root");
@@ -367,11 +376,80 @@ function renderHrApplicants() {
 function initAuthForms() {
     qs("#register-form")?.addEventListener("submit", (event) => {
         event.preventDefault();
-        toast("Registration frontend submitted. OTP flow comes in backend phase.");
+        const status = qs("#register-status");
+        const client = getSupabaseClient();
+        if (!client) {
+            if (status) status.textContent = "Supabase URL and anon key are not added yet.";
+            return toast("Supabase configuration missing.");
+        }
+
+        const fullName = qs("#register-name")?.value.trim() || "";
+        const email = qs("#register-email")?.value.trim() || "";
+        const phone = qs("#register-phone")?.value.trim() || "";
+        const password = qs("#register-password")?.value || "";
+
+        if (!fullName || !email || !phone || !password) {
+            if (status) status.textContent = "Please fill all required fields.";
+            return toast("Please fill all fields.");
+        }
+
+        if (status) status.textContent = "Creating your account...";
+
+        client.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: fullName,
+                    phone
+                }
+            }
+        }).then(({ data, error }) => {
+            if (error) {
+                if (status) status.textContent = error.message;
+                return toast(error.message);
+            }
+
+            const needsConfirmation = !data.session;
+            if (status) {
+                status.textContent = needsConfirmation
+                    ? "Account created. Check your email for confirmation."
+                    : "Account created and signed in successfully.";
+            }
+            toast(needsConfirmation ? "Registration successful. Check your email." : "Registration successful.");
+        });
     });
     qs("#login-form")?.addEventListener("submit", (event) => {
         event.preventDefault();
-        toast("Login frontend submitted.");
+        const status = qs("#login-status");
+        const client = getSupabaseClient();
+        if (!client) {
+            if (status) status.textContent = "Supabase URL and anon key are not added yet.";
+            return toast("Supabase configuration missing.");
+        }
+
+        const email = qs("#login-email")?.value.trim() || "";
+        const password = qs("#login-password")?.value || "";
+
+        if (!email || !password) {
+            if (status) status.textContent = "Please enter email and password.";
+            return toast("Please enter email and password.");
+        }
+
+        if (status) status.textContent = "Signing in...";
+
+        client.auth.signInWithPassword({ email, password }).then(({ error }) => {
+            if (error) {
+                if (status) status.textContent = error.message;
+                return toast(error.message);
+            }
+
+            if (status) status.textContent = "Login successful. Opening dashboard.";
+            toast("Login successful.");
+            window.setTimeout(() => {
+                window.location.href = "dashboard.html";
+            }, 500);
+        });
     });
 }
 
