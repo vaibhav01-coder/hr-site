@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | HR Hiring Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="login">
+    <main class="auth-shell">
+        <section class="surface auth-card">
+            <span class="eyebrow">Login</span>
+            <h1>Candidate and HR sign in</h1>
+            <p>Frontend preview for /login and /hr/login experiences.</p>
+            <form id="login-form" class="auth-form">
+                <label class="field"><span>Email Address</span><input type="email" required></label>
+                <label class="field"><span>Password</span><input type="password" required></label>
+                <button type="submit" class="btn btn-primary full-width">Login</button>
+            </form>
+            <div class="auth-links">
+                <a href="register.html">Create Account</a>
+                <a href="dashboard.html">Candidate Dashboard</a>
+                <a href="hr-dashboard.html">HR Dashboard</a>
+            </div>
+        </section>
+    </main>
+    <div id="toast-root" class="toast-root"></div>
+    <script src="app.js"></script>
+</body>
+</html>

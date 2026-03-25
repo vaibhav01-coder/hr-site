@@ -3,85 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Damor Arvind HR Job Portal</title>
-    <meta name="description" content="Apply for factory and company jobs in Sanand GIDC. Simple mobile-friendly job application portal by Damor Arvind.">
+    <title>HR Hiring Portal</title>
+    <meta name="description" content="Professional HR hiring portal with refundable application fee flow.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body data-page="home">
-    <header class="topbar">
-        <div class="container">
-            <p>Damor Arvind | 6351439792 | arvinddamor1444@gmail.com</p>
+    <div id="cookie-banner" class="cookie-banner">
+        <div class="container cookie-inner">
+            <p>We use only session cookies for login state and form flow.</p>
+            <button type="button" class="btn btn-primary btn-sm" id="accept-cookies">Accept</button>
+        </div>
+    </div>
+
+    <header class="site-header">
+        <div class="top-strip">
+            <div class="container top-strip-inner">
+                <span>HR Hiring Portal</span>
+                <span>Refundable Fee System</span>
+                <span>2026 Frontend Preview</span>
+            </div>
+        </div>
+        <div class="container nav-wrap">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">HR</span>
+                <span class="brand-text">Hiring Portal</span>
+            </a>
+            <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">Menu</button>
+            <nav class="site-nav" id="site-nav">
+                <a href="index.html">Home</a>
+                <a href="jobs.html">Jobs</a>
+                <a href="dashboard.html">Dashboard</a>
+                <a href="hr-dashboard.html">HR Panel</a>
+                <a href="login.html">Login</a>
+                <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+            </nav>
         </div>
     </header>
 
     <main>
-        <section class="hero">
-            <div class="container narrow">
-                <span class="eyebrow">HR Job Portal</span>
-                <h1>Simple job application for Sanand company openings</h1>
-                <p class="lead">Browse active jobs, choose the right opening, and submit your details in a clean mobile-friendly form.</p>
-                <div class="notice-box">
-                    <strong>Note:</strong> Application fee is <strong>Rs. 50 refundable</strong>. If you are not selected, the amount is refunded as per HR process.
+        <section class="hero-section">
+            <div class="container hero-grid">
+                <div class="hero-copy">
+                    <span class="eyebrow">Professional Hiring Frontend</span>
+                    <h1>Clean job application experience with payment and status tracking</h1>
+                    <p class="hero-text">A frontend built around the documentation: job browsing, multi-step applications, Razorpay fee flow, candidate dashboard, HR panel, and legal pages.</p>
+                    <div class="hero-actions">
+                        <a class="btn btn-primary" href="jobs.html">Browse Jobs</a>
+                        <a class="btn btn-outline" href="register.html">Create Account</a>
+                    </div>
+                    <div class="hero-points">
+                        <div class="point-card">
+                            <strong>Refundable Fee</strong>
+                            <span>Apply with a documented Rs. 50 fee flow</span>
+                        </div>
+                        <div class="point-card">
+                            <strong>Multi-Step Form</strong>
+                            <span>Personal, professional, documents, preview</span>
+                        </div>
+                        <div class="point-card">
+                            <strong>HR Workflow</strong>
+                            <span>Applicant review and refund status experience</span>
+                        </div>
+                    </div>
                 </div>
-                <a class="button button-primary full-width-mobile" href="#jobs">View Jobs</a>
+                <div class="hero-panel">
+                    <div class="panel-card accent">
+                        <p class="panel-label">Primary CTA</p>
+                        <h2>Apply Now - Rs. 50 Refundable Fee</h2>
+                        <p class="panel-copy">Frontend-ready purchase gate before application submit.</p>
+                    </div>
+                    <div class="panel-stack">
+                        <div class="panel-card">
+                            <p class="panel-label">Candidate</p>
+                            <h3>Register, browse, apply, track</h3>
+                        </div>
+                        <div class="panel-card">
+                            <p class="panel-label">Admin</p>
+                            <h3>Manage jobs, review applicants, issue refunds</h3>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
         <section class="section">
-            <div class="container narrow">
-                <div class="info-grid">
-                    <article class="info-card">
-                        <h2>HR Contact</h2>
-                        <p>Damor Arvind</p>
-                        <p>Phone: <a href="tel:6351439792">6351439792</a></p>
-                        <p>Email: <a href="mailto:arvinddamor1444@gmail.com">arvinddamor1444@gmail.com</a></p>
-                    </article>
-                    <article class="info-card">
-                        <h2>Location</h2>
-                        <p>Sanand GIDC, Ahmedabad, Gujarat</p>
-                        <p>Designed for easy use on mobile, including basic Android phones.</p>
-                    </article>
+            <div class="container">
+                <div class="section-head">
+                    <span class="eyebrow">Live Preview</span>
+                    <h2>Featured jobs</h2>
+                    <p>These cards use the same frontend data source as the browse and detail pages.</p>
                 </div>
+                <div id="featured-jobs" class="grid cards-grid"></div>
             </div>
         </section>
 
-        <section class="section section-alt" id="jobs">
-            <div class="container narrow">
-                <div class="section-heading">
-                    <h2>Available jobs</h2>
-                    <p>Select one job and continue to the application form.</p>
+        <section class="section alt-section">
+            <div class="container">
+                <div class="section-head">
+                    <span class="eyebrow">Portal Flow</span>
+                    <h2>How the frontend works</h2>
                 </div>
-                <div id="job-list" class="card-list" aria-live="polite"></div>
+                <div class="grid feature-grid">
+                    <article class="feature-card">
+                        <span class="feature-number">01</span>
+                        <h3>Register or login</h3>
+                        <p>Simple candidate auth screens with OTP-ready placeholders and clear form UX.</p>
+                    </article>
+                    <article class="feature-card">
+                        <span class="feature-number">02</span>
+                        <h3>Browse jobs</h3>
+                        <p>View active listings, open details, and launch the application flow with one click.</p>
+                    </article>
+                    <article class="feature-card">
+                        <span class="feature-number">03</span>
+                        <h3>Complete payment</h3>
+                        <p>Frontend payment step mirrors the documented Razorpay order and verification path.</p>
+                    </article>
+                    <article class="feature-card">
+                        <span class="feature-number">04</span>
+                        <h3>Track progress</h3>
+                        <p>Candidate dashboard shows application stages from review through refund processing.</p>
+                    </article>
+                </div>
             </div>
         </section>
 
         <section class="section">
-            <div class="container narrow">
-                <div class="section-heading">
-                    <h2>Interview location</h2>
-                    <p>Sanand GIDC, Ahmedabad</p>
+            <div class="container split-banner">
+                <div>
+                    <span class="eyebrow">Legal and Trust</span>
+                    <h2>Privacy, terms, refund, and cookie pages included</h2>
+                    <p>The frontend now includes the policy routes described in the documentation so the product shell feels complete before backend work starts.</p>
                 </div>
-                <div class="map-card">
-                    <iframe
-                        title="Sanand GIDC map"
-                        src="https://www.google.com/maps?q=Sanand%20GIDC%20Ahmedabad&z=13&output=embed"
-                        loading="lazy"
-                        referrerpolicy="no-referrer-when-downgrade"></iframe>
+                <div class="banner-actions">
+                    <a class="btn btn-outline" href="privacy-policy.html">Privacy Policy</a>
+                    <a class="btn btn-primary" href="refund-policy.html">Refund Policy</a>
                 </div>
             </div>
         </section>
     </main>
 
-    <footer class="footer">
-        <div class="container narrow">
-            <p>This portal collects application details only for recruitment use.</p>
-            <p>Contact: 6351439792 | arvinddamor1444@gmail.com</p>
+    <footer class="site-footer">
+        <div class="container footer-grid">
+            <div>
+                <h3>HR Hiring Portal</h3>
+                <p>Frontend architecture preview based on the provided documentation.</p>
+            </div>
+            <div>
+                <h4>Public</h4>
+                <a href="jobs.html">Jobs</a>
+                <a href="register.html">Register</a>
+                <a href="login.html">Login</a>
+            </div>
+            <div>
+                <h4>Legal</h4>
+                <a href="privacy-policy.html">Privacy Policy</a>
+                <a href="terms-of-service.html">Terms of Service</a>
+                <a href="refund-policy.html">Refund Policy</a>
+                <a href="cookie-policy.html">Cookie Policy</a>
+            </div>
         </div>
     </footer>
 
+    <div id="toast-root" class="toast-root"></div>
     <script src="app.js"></script>
 </body>
 </html>

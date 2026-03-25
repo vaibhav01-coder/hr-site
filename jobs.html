@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobs | HR Hiring Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="jobs">
+    <header class="site-header slim">
+        <div class="container nav-wrap">
+            <a class="brand" href="index.html"><span class="brand-mark">HR</span><span class="brand-text">Hiring Portal</span></a>
+            <nav class="site-nav inline-nav">
+                <a href="index.html">Home</a>
+                <a href="register.html">Register</a>
+                <a href="login.html">Login</a>
+            </nav>
+        </div>
+    </header>
+    <main class="section">
+        <div class="container">
+            <div class="page-head">
+                <span class="eyebrow">Active Listings</span>
+                <h1>Browse jobs</h1>
+                <p>Public route preview for all active job listings.</p>
+            </div>
+            <div class="toolbar surface">
+                <input id="job-search" class="search-input" type="text" placeholder="Search by title, location, or skill">
+                <div class="chip-row">
+                    <button type="button" class="chip active" data-filter="all">All</button>
+                    <button type="button" class="chip" data-filter="full_time">Full Time</button>
+                    <button type="button" class="chip" data-filter="part_time">Part Time</button>
+                    <button type="button" class="chip" data-filter="contract">Contract</button>
+                </div>
+            </div>
+            <div id="jobs-list" class="list-stack"></div>
+        </div>
+    </main>
+    <div id="toast-root" class="toast-root"></div>
+    <script src="app.js"></script>
+</body>
+</html>

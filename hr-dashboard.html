@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Dashboard | HR Hiring Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="hr-dashboard">
+    <header class="site-header slim">
+        <div class="container nav-wrap">
+            <a class="brand" href="index.html"><span class="brand-mark">HR</span><span class="brand-text">Hiring Portal</span></a>
+            <nav class="site-nav inline-nav">
+                <a href="jobs.html">Public Jobs</a>
+                <a href="login.html">Logout</a>
+            </nav>
+        </div>
+    </header>
+    <main class="section">
+        <div class="container">
+            <div class="page-head">
+                <span class="eyebrow">HR Admin Panel</span>
+                <h1>Manage jobs and applicants</h1>
+                <p>Frontend shell for /hr/dashboard and status workflows.</p>
+            </div>
+            <div class="tabs">
+                <button type="button" class="tab active" data-hr-tab="jobs">Jobs</button>
+                <button type="button" class="tab" data-hr-tab="applicants">Applicants</button>
+                <button type="button" class="tab" data-hr-tab="create">Create Job</button>
+            </div>
+            <section class="tab-panel active" id="hr-tab-jobs">
+                <div id="hr-jobs-list" class="list-stack"></div>
+            </section>
+            <section class="tab-panel" id="hr-tab-applicants">
+                <div class="surface table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Job</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hr-applicant-rows"></tbody>
+                    </table>
+                </div>
+            </section>
+            <section class="tab-panel" id="hr-tab-create">
+                <div class="surface">
+                    <form id="create-job-form" class="field-grid">
+                        <label class="field"><span>Job Title</span><input type="text" required></label>
+                        <label class="field"><span>Department</span><input type="text" required></label>
+                        <label class="field"><span>Location</span><input type="text" required></label>
+                        <label class="field"><span>Job Type</span><select><option>full_time</option><option>part_time</option><option>contract</option></select></label>
+                        <label class="field full"><span>Description</span><textarea rows="4"></textarea></label>
+                        <button type="submit" class="btn btn-primary">Post Job</button>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </main>
+    <div id="toast-root" class="toast-root"></div>
+    <script src="app.js"></script>
+</body>
+</html>

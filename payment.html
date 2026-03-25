@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment | HR Hiring Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="payment">
+    <header class="site-header slim">
+        <div class="container nav-wrap">
+            <a class="brand" href="index.html"><span class="brand-mark">HR</span><span class="brand-text">Hiring Portal</span></a>
+            <nav class="site-nav inline-nav">
+                <a href="apply.html">Application</a>
+                <a href="dashboard.html">Dashboard</a>
+            </nav>
+        </div>
+    </header>
+    <main class="section">
+        <div class="container narrow">
+            <div class="page-head">
+                <span class="eyebrow">Razorpay Checkout Preview</span>
+                <h1>Payment page</h1>
+                <p>Frontend-only checkout preview for the documented Rs. 50 refundable fee.</p>
+            </div>
+            <div class="surface">
+                <div id="payment-job-summary" class="summary-list"></div>
+                <div class="price-card">
+                    <span>Application Fee</span>
+                    <strong>Rs. 50</strong>
+                    <p>Refund initiated if candidate is rejected.</p>
+                </div>
+                <div class="badge-row" style="margin:16px 0;">
+                    <span class="trust-badge">PCI-DSS Level 1</span>
+                    <span class="trust-badge">SSL Secured</span>
+                    <span class="trust-badge">Razorpay Ready</span>
+                </div>
+                <button type="button" class="btn btn-primary full-width" id="confirm-payment-btn">Simulate Payment Success</button>
+                <a class="btn btn-outline full-width" id="back-to-apply-link" href="apply.html" style="margin-top:12px;">Return to Application</a>
+            </div>
+        </div>
+    </main>
+    <div id="toast-root" class="toast-root"></div>
+    <script src="app.js"></script>
+</body>
+</html>
