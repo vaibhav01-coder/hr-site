@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply Now | Damor Arvind HR Job Portal</title>
+    <meta name="description" content="Fill the job application form for Sanand company openings.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="form-page" data-page="apply">
+    <header class="topbar">
+        <div class="container">
+            <p>Damor Arvind | 6351439792 | arvinddamor1444@gmail.com</p>
+        </div>
+    </header>
+
+    <main class="container narrow">
+        <section class="form-shell">
+            <div class="form-title-block">
+                <span class="eyebrow">Job Application Form</span>
+                <h1>Apply for selected job</h1>
+                <p class="lead" id="selected-job-text">Choose a job from the home page to continue.</p>
+            </div>
+
+            <div class="payment-box">
+                <strong>Secure Payment:</strong> Rs. 50 refundable application fee. Complete payment first, then submit the application.
+            </div>
+
+            <form id="application-form" novalidate>
+                <div class="field">
+                    <label for="full_name">Full Name</label>
+                    <input id="full_name" name="full_name" type="text" autocomplete="name">
+                    <span class="error-text" data-error-for="full_name"></span>
+                </div>
+
+                <div class="field">
+                    <label for="mobile">Mobile Number</label>
+                    <input id="mobile" name="mobile" type="tel" inputmode="numeric" autocomplete="tel">
+                    <span class="error-text" data-error-for="mobile"></span>
+                </div>
+
+                <div class="field">
+                    <label for="whatsapp">WhatsApp Number</label>
+                    <input id="whatsapp" name="whatsapp" type="tel" inputmode="numeric">
+                    <span class="error-text" data-error-for="whatsapp"></span>
+                </div>
+
+                <div class="field">
+                    <label for="age">Age</label>
+                    <input id="age" name="age" type="number" min="18" max="60">
+                    <span class="error-text" data-error-for="age"></span>
+                </div>
+
+                <div class="field">
+                    <label for="city">City</label>
+                    <input id="city" name="city" type="text">
+                    <span class="error-text" data-error-for="city"></span>
+                </div>
+
+                <div class="field">
+                    <label for="qualification">Qualification</label>
+                    <select id="qualification" name="qualification">
+                        <option value="">Select qualification</option>
+                        <option>10th Pass</option>
+                        <option>12th Pass</option>
+                        <option>ITI</option>
+                        <option>Diploma</option>
+                        <option>Any</option>
+                    </select>
+                    <span class="error-text" data-error-for="qualification"></span>
+                </div>
+
+                <div class="field">
+                    <label for="trade">Trade</label>
+                    <input id="trade" name="trade" type="text" placeholder="Example: Fitter, Welder, Electrician">
+                    <span class="error-text" data-error-for="trade"></span>
+                </div>
+
+                <div class="field">
+                    <label for="shift_pref">Shift Preference</label>
+                    <select id="shift_pref" name="shift_pref">
+                        <option value="">Select shift</option>
+                        <option>8 Hours Shift</option>
+                        <option>12 Hours Shift</option>
+                        <option>26 Days/Month</option>
+                        <option>Any Shift</option>
+                    </select>
+                    <span class="error-text" data-error-for="shift_pref"></span>
+                </div>
+
+                <div class="field">
+                    <label for="resume">Resume PDF (optional)</label>
+                    <input id="resume" name="resume" type="file" accept="application/pdf,.pdf">
+                    <p class="helper-text">Only PDF file. This demo stores the file name locally for now.</p>
+                    <span class="error-text" data-error-for="resume"></span>
+                </div>
+
+                <div class="summary-card">
+                    <h2>Selected job details</h2>
+                    <dl id="job-summary"></dl>
+                </div>
+
+                <div class="checkbox-row">
+                    <input id="confirm-payment" type="checkbox">
+                    <label for="confirm-payment">I confirm that secure payment of Rs. 50 is completed or ready to complete.</label>
+                </div>
+
+                <div class="button-row">
+                    <button type="button" class="button button-primary" id="pay-now-btn">Pay Rs. 50</button>
+                    <button type="submit" class="button button-green" id="submit-btn" disabled>Submit Application</button>
+                </div>
+
+                <div id="payment-status" class="helper-text" aria-live="polite"></div>
+            </form>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
