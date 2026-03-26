@@ -54,9 +54,9 @@ const jobs = [
 ];
 
 const applications = [
-    { id: "app-1", candidate: "Ravi Kumar", jobId: "job-1", experience: "2 years", paymentStatus: "paid", status: "under_review", steps: [true, true, false, false, false] },
-    { id: "app-2", candidate: "Sneha Patel", jobId: "job-2", experience: "3 years", paymentStatus: "paid", status: "shortlisted", steps: [true, true, true, false, false] },
-    { id: "app-3", candidate: "Aman Singh", jobId: "job-3", experience: "1 year", paymentStatus: "refund_initiated", status: "rejected", steps: [true, true, true, true, false] }
+    { id: "app-1", candidate: "Ravi Kumar", jobId: "job-1", experience: "2 years", status: "under_review", steps: [true, true, false, false] },
+    { id: "app-2", candidate: "Sneha Patel", jobId: "job-2", experience: "3 years", status: "shortlisted", steps: [true, true, true, false] },
+    { id: "app-3", candidate: "Aman Singh", jobId: "job-3", experience: "1 year", status: "rejected", steps: [true, true, true, true] }
 ];
 
 const qs = (selector) => document.querySelector(selector);
@@ -64,9 +64,15 @@ const qsa = (selector) => [...document.querySelectorAll(selector)];
 const params = () => new URLSearchParams(window.location.search);
 const getJob = (jobId) => jobs.find((job) => job.id === jobId) || jobs[0];
 let supabaseClient = null;
+const ALLOWED_RESUME_TYPES = [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+];
+const MAX_RESUME_SIZE = 5 * 1024 * 1024;
 
-function getPaymentConfig() {
-    return window.HR_PAYMENT_CONFIG || null;
+function getApplicationConfig() {
+    return window.HR_APPLICATION_CONFIG || null;
 }
 
 async function postJson(url, body) {
@@ -108,6 +114,124 @@ function toast(message) {
     item.textContent = message;
     root.appendChild(item);
     window.setTimeout(() => item.remove(), 2800);
+}
+
+function slugify(value) {
+    return (value || "candidate")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 50) || "candidate";
+}
+
+function getResumeExtension(fileName) {
+    const parts = (fileName || "").split(".");
+    return parts.length > 1 ? parts.pop().toLowerCase() : "pdf";
+}
+
+function normaliseGender(value) {
+    const text = (value || "").trim().toLowerCase();
+    if (text === "male" || text === "female" || text === "other") return text;
+    return null;
+}
+
+function normaliseSkills(value) {
+    return (value || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
+
+async function getCurrentUser(client) {
+    const { data, error } = await client.auth.getUser();
+    if (error) throw error;
+    return data.user || null;
+}
+
+async function uploadResumeToSupabase(client, job, applicantData, resumeFile) {
+    const applicationConfig = getApplicationConfig();
+    if (!applicationConfig?.resumesBucket) {
+        throw new Error("Resume bucket configuration is missing.");
+    }
+
+    const fileExt = getResumeExtension(resumeFile.name);
+    const safeName = slugify(applicantData.fullName || applicantData.email || applicantData.phone);
+    const path = `${job.id}/${Date.now()}-${safeName}.${fileExt}`;
+
+    const { error: uploadError } = await client.storage
+        .from(applicationConfig.resumesBucket)
+        .upload(path, resumeFile, {
+            cacheControl: "3600",
+            upsert: false
+        });
+
+    if (uploadError) throw uploadError;
+
+    const { data: signedUrlData, error: signedUrlError } = await client.storage
+        .from(applicationConfig.resumesBucket)
+        .createSignedUrl(path, 60 * 60 * 24 * 7);
+
+    if (signedUrlError) throw signedUrlError;
+
+    return {
+        path,
+        signedUrl: signedUrlData.signedUrl
+    };
+}
+
+async function saveApplicationToSupabase(client, job, user, applicantData, resumeUpload) {
+    const payload = {
+        candidate_id: user.id,
+        job_ref: job.id,
+        job_title: job.title,
+        company_name: job.company,
+        full_name: applicantData.fullName,
+        email: applicantData.email,
+        phone: applicantData.phone,
+        dob: applicantData.dob || null,
+        gender: normaliseGender(applicantData.gender),
+        address: applicantData.address || null,
+        qualification: applicantData.qualification || null,
+        experience_years: applicantData.experience ? Number(applicantData.experience) : null,
+        current_title: applicantData.currentTitle || null,
+        skills: normaliseSkills(applicantData.skills),
+        resume_path: resumeUpload.path,
+        resume_url: resumeUpload.signedUrl,
+        resume_file_name: applicantData.resumeFileName,
+        cover_letter: applicantData.coverLetter || null,
+        linkedin_url: applicantData.linkedin || null,
+        status: "under_review"
+    };
+
+    const { data, error } = await client
+        .from("candidate_applications")
+        .insert(payload)
+        .select("id, created_at")
+        .single();
+
+    if (error) throw error;
+    return data;
+}
+
+async function notifyHrByEmail(job, applicantData, resumeUpload, applicationRecord) {
+    const applicationConfig = getApplicationConfig();
+    if (!applicationConfig?.notifyEndpoint) {
+        throw new Error("HR notify endpoint is missing.");
+    }
+
+    return postJson(applicationConfig.notifyEndpoint, {
+        applicationId: applicationRecord.id,
+        submittedAt: applicationRecord.created_at,
+        jobId: job.id,
+        jobTitle: job.title,
+        company: job.company,
+        applicant: applicantData,
+        resume: {
+            fileName: applicantData.resumeFileName,
+            path: resumeUpload.path,
+            signedUrl: resumeUpload.signedUrl
+        }
+    });
 }
 
 function initCookieBanner() {
@@ -234,13 +358,12 @@ function setupApplyPage() {
     if (!subtitle) return;
     const job = getJob(params().get("id"));
     const summary = qs("#apply-job-summary");
-    const paymentLink = qs("#go-payment-link");
-    const paymentLock = qs("#payment-lock");
     const preview = qs("#preview-card");
     const next = qs("#next-step");
     const prev = qs("#prev-step");
     const submit = qs("#submit-application");
     const form = qs("#apply-form");
+    const resumeInput = qs("#resume");
     const steps = qsa(".form-step");
     const tabs = qsa(".stepper .step");
     let current = 0;
@@ -250,13 +373,8 @@ function setupApplyPage() {
         <div class="summary-item"><span>Role</span><strong>${job.title}</strong></div>
         <div class="summary-item"><span>Company</span><strong>${job.company}</strong></div>
         <div class="summary-item"><span>Location</span><strong>${job.location}</strong></div>
-        <div class="summary-item"><span>Fee</span><strong>Rs. 50 refundable</strong></div>
+        <div class="summary-item"><span>Status</span><strong>Open for direct application</strong></div>
     `;
-    paymentLink.href = `payment.html?id=${job.id}`;
-
-    function paymentDone() {
-        return localStorage.getItem(`payment:${job.id}`) === "paid";
-    }
 
     function renderStep() {
         steps.forEach((step, index) => step.classList.toggle("active", index === current));
@@ -264,9 +382,7 @@ function setupApplyPage() {
         prev.style.visibility = current === 0 ? "hidden" : "visible";
         next.hidden = current === steps.length - 1;
         submit.hidden = current !== steps.length - 1;
-        submit.disabled = !paymentDone();
-        paymentLock.textContent = paymentDone() ? "Payment verified" : "Pending payment";
-        paymentLock.classList.toggle("success", paymentDone());
+        submit.disabled = false;
 
         if (current === steps.length - 1) {
             preview.innerHTML = `
@@ -285,142 +401,78 @@ function setupApplyPage() {
 
     next.addEventListener("click", () => { if (current < steps.length - 1) { current += 1; renderStep(); } });
     prev.addEventListener("click", () => { if (current > 0) { current -= 1; renderStep(); } });
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        if (!paymentDone()) return toast("Complete the payment step first.");
-        localStorage.setItem("latestApplication", JSON.stringify({ jobId: job.id, title: job.title }));
-        toast("Application submitted successfully.");
+        if (!resumeInput?.files?.length) return toast("Please upload a resume before submitting.");
+
+        const client = getSupabaseClient();
+        if (!client) return toast("Supabase configuration missing on this page.");
+
+        const resumeFile = resumeInput.files[0];
+        if (resumeFile.size > MAX_RESUME_SIZE) return toast("Resume must be 5MB or smaller.");
+        if (resumeFile.type && !ALLOWED_RESUME_TYPES.includes(resumeFile.type)) {
+            return toast("Resume must be a PDF, DOC, or DOCX file.");
+        }
+
+        const applicantData = {
+            jobId: job.id,
+            title: job.title,
+            company: job.company,
+            fullName: qs("#full_name")?.value.trim() || "",
+            email: qs("#email")?.value.trim() || "",
+            phone: qs("#phone")?.value.trim() || "",
+            dob: qs("#dob")?.value || "",
+            gender: qs("#gender")?.value || "",
+            address: qs("#address")?.value.trim() || "",
+            qualification: qs("#qualification")?.value || "",
+            experience: qs("#experience")?.value || "",
+            currentTitle: qs("#current_title")?.value.trim() || "",
+            linkedin: qs("#linkedin")?.value.trim() || "",
+            skills: qs("#skills")?.value.trim() || "",
+            coverLetter: qs("#cover_letter")?.value.trim() || "",
+            resumeFileName: resumeFile.name
+        };
+
+        if (!applicantData.fullName || !applicantData.email || !applicantData.phone) {
+            return toast("Please fill name, email, and phone before submitting.");
+        }
+
+        submit.disabled = true;
+        submit.textContent = "Submitting...";
+
+        try {
+            const user = await getCurrentUser(client);
+            if (!user) {
+                throw new Error("Please login first, then submit the application.");
+            }
+
+            const resumeUpload = await uploadResumeToSupabase(client, job, applicantData, resumeFile);
+            const applicationRecord = await saveApplicationToSupabase(client, job, user, applicantData, resumeUpload);
+            await notifyHrByEmail(job, applicantData, resumeUpload, applicationRecord);
+
+            localStorage.setItem("latestApplication", JSON.stringify({
+                ...applicantData,
+                applicationId: applicationRecord.id,
+                resumePath: resumeUpload.path,
+                resumeUrl: resumeUpload.signedUrl
+            }));
+
+            toast("Application submitted and HR email sent.");
+            form.reset();
+            current = 0;
+            renderStep();
+        } catch (error) {
+            toast(error?.message || "Unable to submit application.");
+        } finally {
+            submit.disabled = false;
+            submit.textContent = "Submit Application";
+        }
     });
     renderStep();
 }
 
-function setupPaymentPage() {
-    const summary = qs("#payment-job-summary");
-    if (!summary) return;
-    const job = getJob(params().get("id"));
-    const confirmBtn = qs("#confirm-payment-btn");
-    const backLink = qs("#back-to-apply-link");
-    const statusBox = qs("#payment-status-box");
-    const paymentConfig = getPaymentConfig();
-
-    summary.innerHTML = `
-        <div class="summary-item"><span>Job</span><strong>${job.title}</strong></div>
-        <div class="summary-item"><span>Company</span><strong>${job.company}</strong></div>
-        <div class="summary-item"><span>Amount</span><strong>Rs. 50</strong></div>
-        <div class="summary-item"><span>Status</span><strong>${localStorage.getItem(`payment:${job.id}`) === "paid" ? "Payment verified" : "Awaiting checkout"}</strong></div>
-    `;
-    backLink.href = `apply.html?id=${job.id}`;
-
-    function setPaymentStatus(message) {
-        if (statusBox) statusBox.innerHTML = `<strong>Status:</strong> ${message}`;
-    }
-
-    if (!paymentConfig || !paymentConfig.razorpayKeyId || paymentConfig.razorpayKeyId === "rzp_test_your_key_id") {
-        setPaymentStatus("Add your Razorpay key and backend endpoints in payment-config.js before going live.");
-    }
-
-    confirmBtn.addEventListener("click", async () => {
-        if (!window.Razorpay) {
-            setPaymentStatus("Razorpay checkout failed to load. Check your internet connection and try again.");
-            return toast("Unable to load Razorpay.");
-        }
-
-        if (!paymentConfig || !paymentConfig.orderEndpoint || !paymentConfig.verifyEndpoint || !paymentConfig.razorpayKeyId) {
-            setPaymentStatus("Payment configuration is incomplete.");
-            return toast("Payment configuration missing.");
-        }
-
-        confirmBtn.disabled = true;
-        setPaymentStatus("Creating secure payment order...");
-
-        const applicant = {
-            full_name: qs("#full_name")?.value || "",
-            email: qs("#email")?.value || "",
-            phone: qs("#phone")?.value || "",
-            qualification: qs("#qualification")?.value || ""
-        };
-
-        try {
-            const order = await postJson(paymentConfig.orderEndpoint, {
-                jobId: job.id,
-                jobTitle: job.title,
-                amount: paymentConfig.amount,
-                currency: paymentConfig.currency,
-                applicant
-            });
-
-            const razorpay = new window.Razorpay({
-                key: paymentConfig.razorpayKeyId,
-                amount: order.amount || paymentConfig.amount,
-                currency: order.currency || paymentConfig.currency,
-                name: paymentConfig.companyName || "HR Hiring Portal",
-                description: `Application fee for ${job.title}`,
-                image: paymentConfig.companyLogo || undefined,
-                order_id: order.orderId,
-                handler: async function (response) {
-                    setPaymentStatus("Verifying payment...");
-
-                    try {
-                        await postJson(paymentConfig.verifyEndpoint, {
-                            jobId: job.id,
-                            razorpay_order_id: response.razorpay_order_id,
-                            razorpay_payment_id: response.razorpay_payment_id,
-                            razorpay_signature: response.razorpay_signature
-                        });
-
-                        localStorage.setItem(`payment:${job.id}`, "paid");
-                        localStorage.setItem(`payment_details:${job.id}`, JSON.stringify(response));
-                        setPaymentStatus("Payment verified successfully. Redirecting to your application...");
-                        toast("Payment verified.");
-                        window.setTimeout(() => {
-                            window.location.href = `apply.html?id=${job.id}`;
-                        }, 700);
-                    } catch (error) {
-                        setPaymentStatus(error.message || "Payment verification failed.");
-                        toast(error.message || "Payment verification failed.");
-                    } finally {
-                        confirmBtn.disabled = false;
-                    }
-                },
-                prefill: {
-                    name: applicant.full_name,
-                    email: applicant.email,
-                    contact: applicant.phone
-                },
-                notes: {
-                    job_id: job.id,
-                    job_title: job.title
-                },
-                theme: {
-                    color: "#0d2d5a"
-                },
-                modal: {
-                    ondismiss: function () {
-                        setPaymentStatus("Checkout closed before payment completion.");
-                        confirmBtn.disabled = false;
-                    }
-                }
-            });
-
-            razorpay.on("payment.failed", function (response) {
-                const message = response.error?.description || "Payment failed. Please try again.";
-                setPaymentStatus(message);
-                toast(message);
-                confirmBtn.disabled = false;
-            });
-
-            razorpay.open();
-            setPaymentStatus("Razorpay checkout opened. Complete the payment to continue.");
-        } catch (error) {
-            setPaymentStatus(error.message || "Unable to start payment.");
-            toast(error.message || "Unable to start payment.");
-            confirmBtn.disabled = false;
-        }
-    });
-}
-
 function trackerMarkup(app) {
-    const labels = ["Submitted", "Under Review", "Shortlisted / Rejected", "Hired / Refund", "Refunded"];
+    const labels = ["Submitted", "Under Review", "Shortlisted / Rejected", "Closed"];
     return `
         <div class="tracker">
             ${labels.map((label, index) => {
@@ -500,7 +552,7 @@ function renderHrApplicants() {
     qs("#applicants-heading").textContent = `Applicants for ${job.title}`;
     rows.innerHTML = applications
         .filter((app) => app.jobId === job.id)
-        .map((app) => `<tr><td>${app.candidate}</td><td>${app.experience}</td><td>${app.paymentStatus.replace("_", " ")}</td><td>${app.status.replace("_", " ")}</td></tr>`)
+        .map((app) => `<tr><td>${app.candidate}</td><td>${app.experience}</td><td>${app.status.replace("_", " ")}</td></tr>`)
         .join("");
 }
 
@@ -608,7 +660,6 @@ function init() {
     renderJobsPage();
     renderJobDetail();
     setupApplyPage();
-    setupPaymentPage();
     renderDashboard();
     renderHrDashboard();
     renderHrApplicants();

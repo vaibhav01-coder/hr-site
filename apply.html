@@ -15,7 +15,6 @@
             <a class="brand" href="index.html"><span class="brand-mark">HR</span><span class="brand-text">Hiring Portal</span></a>
             <nav class="site-nav inline-nav">
                 <a href="jobs.html">Jobs</a>
-                <a href="payment.html">Payment</a>
                 <a href="dashboard.html">Dashboard</a>
             </nav>
         </div>
@@ -35,7 +34,7 @@
                     <div class="poster-banner-main">
                         <span class="poster-chip">Urgent Requirement</span>
                         <h2>Factory hiring campaign with direct joining support</h2>
-                        <p>Fast screening, structured application flow, payment verification, and dashboard tracking in one premium candidate experience.</p>
+                        <p>Fast screening, structured application flow, direct resume submission, and dashboard tracking in one premium candidate experience.</p>
                     </div>
                     <div class="poster-salary-grid">
                         <div class="poster-salary-card">
@@ -120,11 +119,12 @@
                                 <label class="field full"><span>Cover Letter</span><textarea id="cover_letter" rows="5"></textarea></label>
                             </div>
                             <div class="info-box"><strong>Allowed files:</strong> PDF or DOC up to 5MB.</div>
+                            <div class="info-box"><strong>HR notification:</strong> After final submit, your resume is uploaded to Supabase and HR receives an email with the application details and resume link.</div>
                         </div>
 
                         <div class="form-step" data-step="4">
                             <div class="preview-card" id="preview-card"></div>
-                            <div class="info-box warning"><strong>Submission lock:</strong> Final submit remains disabled until the payment step is completed.</div>
+                            <div class="info-box warning"><strong>Final check:</strong> Review your details before sending the application to HR.</div>
                         </div>
 
                         <div class="form-actions">
@@ -141,16 +141,15 @@
                         <div id="apply-job-summary" class="summary-list"></div>
                     </div>
                     <div>
-                        <span class="eyebrow">Payment Status</span>
-                        <div id="payment-lock" class="payment-lock">Pending payment</div>
-                        <a class="btn btn-primary full-width" id="go-payment-link" href="payment.html">Go to Payment</a>
+                        <span class="eyebrow">Application Status</span>
+                        <div class="status-lock success">Ready to submit</div>
                     </div>
                     <div>
                         <span class="eyebrow">Trust</span>
                         <div class="badge-row">
-                            <span class="trust-badge">PCI-DSS</span>
                             <span class="trust-badge">SSL</span>
-                            <span class="trust-badge">Refundable Fee</span>
+                            <span class="trust-badge">Resume Upload</span>
+                            <span class="trust-badge">HR Notified</span>
                         </div>
                     </div>
                     <div class="recruitment-note">
@@ -163,6 +162,8 @@
     </main>
 
     <div id="toast-root" class="toast-root"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

@@ -302,11 +302,11 @@ p { color: var(--muted); line-height: 1.65; }
 .form-step { display: none; }
 .form-step.active { display: block; }
 .form-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
-.info-box, .payment-lock, .preview-card, .price-card { border-radius: 18px; padding: 16px; }
+.info-box, .status-lock, .preview-card, .price-card { border-radius: 18px; padding: 16px; }
 .info-box { margin-top: 16px; background: linear-gradient(180deg, #eef5fc, #f6f9fd); border: 1px solid #d5e3f0; }
 .info-box.warning { background: linear-gradient(180deg, #fff8e6, #fff3cf); border-color: #ecd39a; color: var(--warning); }
-.payment-lock { background: linear-gradient(180deg, #f8fbff, #eef3f9); border: 1px solid var(--line); color: var(--muted); margin-bottom: 16px; font-weight: 800; }
-.payment-lock.success { background: #eaf7ef; border-color: rgba(31,146,84,.25); color: var(--success); }
+.status-lock { background: linear-gradient(180deg, #f8fbff, #eef3f9); border: 1px solid var(--line); color: var(--muted); margin-bottom: 16px; font-weight: 800; }
+.status-lock.success { background: #eaf7ef; border-color: rgba(31,146,84,.25); color: var(--success); }
 .preview-card, .price-card { background: linear-gradient(180deg, #f9fbfe, #eef3f9); border: 1px solid var(--line); }
 .price-card { display: grid; gap: 8px; text-align: center; }
 .price-card strong { font-size: 2rem; color: var(--navy); }

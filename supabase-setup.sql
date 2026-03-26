@@ -64,9 +64,6 @@ create table if not exists public.applications (
     resume_url text,
     cover_letter text,
     linkedin_url text,
-    payment_id text,
-    payment_status text not null default 'pending' check (payment_status in ('pending', 'paid', 'refund_initiated', 'refunded')),
-    refund_id text,
     status text not null default 'under_review' check (status in ('under_review', 'shortlisted', 'hired', 'rejected')),
     created_at timestamptz not null default now()
 );
@@ -117,3 +114,68 @@ values
 ('Warehouse Assistant', 'Handle inventory, dispatch, and warehouse operations.', 'Operations', 'Sanand, Gujarat', 'contract', 'Rs. 14,000 - Rs. 18,000', array['Inventory', 'Packing', 'Dispatch'], 'Night allowance, shift meal'),
 ('HR Executive', 'Support recruitment and onboarding operations.', 'Human Resources', 'Remote / Ahmedabad', 'part_time', 'Rs. 20,000 - Rs. 28,000', array['Recruitment', 'Screening', 'Communication'], 'Hybrid work, flexible hours')
 on conflict do nothing;
+
+create table if not exists public.candidate_applications (
+    id uuid primary key default gen_random_uuid(),
+    candidate_id uuid not null references public.profiles(id) on delete cascade,
+    job_ref text not null,
+    job_title text not null,
+    company_name text,
+    full_name text not null,
+    email text not null,
+    phone text not null,
+    dob date,
+    gender text check (gender in ('male', 'female', 'other')),
+    address text,
+    qualification text,
+    experience_years integer,
+    current_title text,
+    skills text[] default '{}',
+    resume_path text not null,
+    resume_url text not null,
+    resume_file_name text,
+    cover_letter text,
+    linkedin_url text,
+    status text not null default 'under_review' check (status in ('under_review', 'shortlisted', 'hired', 'rejected')),
+    created_at timestamptz not null default now()
+);
+
+alter table public.candidate_applications enable row level security;
+
+drop policy if exists "candidate_applications_self_select" on public.candidate_applications;
+create policy "candidate_applications_self_select"
+on public.candidate_applications
+for select
+to authenticated
+using (candidate_id = auth.uid());
+
+drop policy if exists "candidate_applications_self_insert" on public.candidate_applications;
+create policy "candidate_applications_self_insert"
+on public.candidate_applications
+for insert
+to authenticated
+with check (candidate_id = auth.uid());
+
+insert into storage.buckets (id, name, public)
+values ('resumes', 'resumes', false)
+on conflict (id) do nothing;
+
+drop policy if exists "resume_upload_own_folder" on storage.objects;
+create policy "resume_upload_own_folder"
+on storage.objects
+for insert
+to authenticated
+with check (
+    bucket_id = 'resumes'
+    and owner = auth.uid()
+);
+
+drop policy if exists "resume_read_own_folder" on storage.objects;
+create policy "resume_read_own_folder"
+on storage.objects
+for select
+to authenticated
+using (
+    bucket_id = 'resumes'
+    and owner = auth.uid()
+);
