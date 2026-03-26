@@ -116,6 +116,34 @@ function toast(message) {
     window.setTimeout(() => item.remove(), 2800);
 }
 
+function initRevealAnimations() {
+    const items = qsa(".reveal, .card, .job-list-card, .feature-card, .panel-card, .point-card, .poster-card, .stat-box, .app-card");
+    if (!items.length) return;
+
+    items.forEach((item, index) => {
+        item.classList.add("reveal");
+        item.style.transitionDelay = `${Math.min(index * 45, 220)}ms`;
+    });
+
+    if (!("IntersectionObserver" in window)) {
+        items.forEach((item) => item.classList.add("in-view"));
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add("in-view");
+                observer.unobserve(entry.target);
+            }
+        });
+    }, {
+        threshold: 0.14
+    });
+
+    items.forEach((item) => observer.observe(item));
+}
+
 function slugify(value) {
     return (value || "candidate")
         .toLowerCase()
@@ -269,7 +297,10 @@ function featuredCard(job) {
 
 function renderFeaturedJobs() {
     const container = qs("#featured-jobs");
-    if (container) container.innerHTML = jobs.slice(0, 3).map(featuredCard).join("");
+    if (container) {
+        container.innerHTML = jobs.slice(0, 3).map(featuredCard).join("");
+        initRevealAnimations();
+    }
 }
 
 function jobListCard(job) {
@@ -308,6 +339,7 @@ function renderJobsPage() {
             return matchesFilter && text.includes(query);
         });
         container.innerHTML = filtered.map(jobListCard).join("");
+        initRevealAnimations();
     }
 
     chips.forEach((chip) => {
@@ -499,6 +531,7 @@ function renderDashboard() {
             </article>
         `;
     }).join("");
+    initRevealAnimations();
 }
 
 function renderHrDashboard() {
@@ -517,6 +550,7 @@ function renderHrDashboard() {
                 </div>
             </article>
         `).join("");
+        initRevealAnimations();
     }
     if (applicantRows) {
         applicantRows.innerHTML = applications.map((app) => {
@@ -664,6 +698,7 @@ function init() {
     renderHrDashboard();
     renderHrApplicants();
     initToastButtons();
+    initRevealAnimations();
 }
 
 init();
