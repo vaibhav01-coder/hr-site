@@ -65,6 +65,33 @@ const params = () => new URLSearchParams(window.location.search);
 const getJob = (jobId) => jobs.find((job) => job.id === jobId) || jobs[0];
 let supabaseClient = null;
 
+function getPaymentConfig() {
+    return window.HR_PAYMENT_CONFIG || null;
+}
+
+async function postJson(url, body) {
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body)
+    });
+
+    let payload = {};
+    try {
+        payload = await response.json();
+    } catch (error) {
+        payload = {};
+    }
+
+    if (!response.ok) {
+        throw new Error(payload.message || "Request failed.");
+    }
+
+    return payload;
+}
+
 function getSupabaseClient() {
     if (supabaseClient) return supabaseClient;
     const config = window.HR_SUPABASE_CONFIG;
@@ -273,18 +300,122 @@ function setupPaymentPage() {
     const job = getJob(params().get("id"));
     const confirmBtn = qs("#confirm-payment-btn");
     const backLink = qs("#back-to-apply-link");
+    const statusBox = qs("#payment-status-box");
+    const paymentConfig = getPaymentConfig();
 
     summary.innerHTML = `
         <div class="summary-item"><span>Job</span><strong>${job.title}</strong></div>
         <div class="summary-item"><span>Company</span><strong>${job.company}</strong></div>
         <div class="summary-item"><span>Amount</span><strong>Rs. 50</strong></div>
-        <div class="summary-item"><span>Status</span><strong>Awaiting checkout</strong></div>
+        <div class="summary-item"><span>Status</span><strong>${localStorage.getItem(`payment:${job.id}`) === "paid" ? "Payment verified" : "Awaiting checkout"}</strong></div>
     `;
     backLink.href = `apply.html?id=${job.id}`;
-    confirmBtn.addEventListener("click", () => {
-        localStorage.setItem(`payment:${job.id}`, "paid");
-        toast("Payment verified. Returning to application.");
-        window.setTimeout(() => { window.location.href = `apply.html?id=${job.id}`; }, 700);
+
+    function setPaymentStatus(message) {
+        if (statusBox) statusBox.innerHTML = `<strong>Status:</strong> ${message}`;
+    }
+
+    if (!paymentConfig || !paymentConfig.razorpayKeyId || paymentConfig.razorpayKeyId === "rzp_test_your_key_id") {
+        setPaymentStatus("Add your Razorpay key and backend endpoints in payment-config.js before going live.");
+    }
+
+    confirmBtn.addEventListener("click", async () => {
+        if (!window.Razorpay) {
+            setPaymentStatus("Razorpay checkout failed to load. Check your internet connection and try again.");
+            return toast("Unable to load Razorpay.");
+        }
+
+        if (!paymentConfig || !paymentConfig.orderEndpoint || !paymentConfig.verifyEndpoint || !paymentConfig.razorpayKeyId) {
+            setPaymentStatus("Payment configuration is incomplete.");
+            return toast("Payment configuration missing.");
+        }
+
+        confirmBtn.disabled = true;
+        setPaymentStatus("Creating secure payment order...");
+
+        const applicant = {
+            full_name: qs("#full_name")?.value || "",
+            email: qs("#email")?.value || "",
+            phone: qs("#phone")?.value || "",
+            qualification: qs("#qualification")?.value || ""
+        };
+
+        try {
+            const order = await postJson(paymentConfig.orderEndpoint, {
+                jobId: job.id,
+                jobTitle: job.title,
+                amount: paymentConfig.amount,
+                currency: paymentConfig.currency,
+                applicant
+            });
+
+            const razorpay = new window.Razorpay({
+                key: paymentConfig.razorpayKeyId,
+                amount: order.amount || paymentConfig.amount,
+                currency: order.currency || paymentConfig.currency,
+                name: paymentConfig.companyName || "HR Hiring Portal",
+                description: `Application fee for ${job.title}`,
+                image: paymentConfig.companyLogo || undefined,
+                order_id: order.orderId,
+                handler: async function (response) {
+                    setPaymentStatus("Verifying payment...");
+
+                    try {
+                        await postJson(paymentConfig.verifyEndpoint, {
+                            jobId: job.id,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature
+                        });
+
+                        localStorage.setItem(`payment:${job.id}`, "paid");
+                        localStorage.setItem(`payment_details:${job.id}`, JSON.stringify(response));
+                        setPaymentStatus("Payment verified successfully. Redirecting to your application...");
+                        toast("Payment verified.");
+                        window.setTimeout(() => {
+                            window.location.href = `apply.html?id=${job.id}`;
+                        }, 700);
+                    } catch (error) {
+                        setPaymentStatus(error.message || "Payment verification failed.");
+                        toast(error.message || "Payment verification failed.");
+                    } finally {
+                        confirmBtn.disabled = false;
+                    }
+                },
+                prefill: {
+                    name: applicant.full_name,
+                    email: applicant.email,
+                    contact: applicant.phone
+                },
+                notes: {
+                    job_id: job.id,
+                    job_title: job.title
+                },
+                theme: {
+                    color: "#0d2d5a"
+                },
+                modal: {
+                    ondismiss: function () {
+                        setPaymentStatus("Checkout closed before payment completion.");
+                        confirmBtn.disabled = false;
+                    }
+                }
+            });
+
+            razorpay.on("payment.failed", function (response) {
+                const message = response.error?.description || "Payment failed. Please try again.";
+                setPaymentStatus(message);
+                toast(message);
+                confirmBtn.disabled = false;
+            });
+
+            razorpay.open();
+            setPaymentStatus("Razorpay checkout opened. Complete the payment to continue.");
+        } catch (error) {
+            setPaymentStatus(error.message || "Unable to start payment.");
+            toast(error.message || "Unable to start payment.");
+            confirmBtn.disabled = false;
+        }
     });
 }
 
@@ -417,6 +548,16 @@ function initAuthForms() {
                     : "Account created and signed in successfully.";
             }
             toast(needsConfirmation ? "Registration successful. Check your email." : "Registration successful.");
+
+            if (!needsConfirmation) {
+                window.setTimeout(() => {
+                    window.location.href = "dashboard.html";
+                }, 500);
+            }
+        }).catch((error) => {
+            const message = error?.message || "Registration failed. Please check your internet connection and Supabase settings.";
+            if (status) status.textContent = message;
+            toast(message);
         });
     });
     qs("#login-form")?.addEventListener("submit", (event) => {

@@ -21,16 +21,59 @@
         </div>
     </header>
 
-    <main class="section">
+    <main class="section recruitment-page">
         <div class="container">
             <div class="page-head">
-                <span class="eyebrow">Multi-Step Application</span>
-                <h1>Candidate application form</h1>
+                <span class="eyebrow">MNC Hiring Desk</span>
+                <h1>Direct joining application center</h1>
                 <p id="apply-job-subtitle">Selected role will appear here.</p>
             </div>
 
+            <section class="recruitment-showcase">
+                <article class="poster-banner poster-banner-primary">
+                    <div class="poster-banner-topline">Raicam Company</div>
+                    <div class="poster-banner-main">
+                        <span class="poster-chip">Urgent Requirement</span>
+                        <h2>Factory hiring campaign with direct joining support</h2>
+                        <p>Fast screening, structured application flow, payment verification, and dashboard tracking in one premium candidate experience.</p>
+                    </div>
+                    <div class="poster-salary-grid">
+                        <div class="poster-salary-card">
+                            <span>10th / 12th Pass</span>
+                            <strong>Rs. 14,160</strong>
+                            <small>Estimated in-hand</small>
+                        </div>
+                        <div class="poster-salary-card">
+                            <span>ITI / Diploma</span>
+                            <strong>Rs. 17,221</strong>
+                            <small>Estimated in-hand</small>
+                        </div>
+                        <div class="poster-salary-card">
+                            <span>Shift Pattern</span>
+                            <strong>26 Working</strong>
+                            <small>Canteen support included</small>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="poster-banner poster-banner-secondary">
+                    <div class="poster-banner-side">
+                        <span class="poster-chip poster-chip-light">Sanand Opportunity</span>
+                        <h3>Candidate profile</h3>
+                    </div>
+                    <div class="poster-facts">
+                        <div class="poster-fact"><span>Qualification</span><strong>10th, 12th, ITI, Diploma, Graduate</strong></div>
+                        <div class="poster-fact"><span>Age</span><strong>18 to 26 years</strong></div>
+                        <div class="poster-fact"><span>Duty</span><strong>8 Hours / 24 Days</strong></div>
+                        <div class="poster-fact"><span>Documents</span><strong>Resume, Aadhaar, PAN, Marksheet</strong></div>
+                        <div class="poster-fact"><span>Benefits</span><strong>Free canteen and transport support</strong></div>
+                        <div class="poster-fact"><span>Contact</span><strong>63514 39792</strong></div>
+                    </div>
+                </article>
+            </section>
+
             <div class="apply-layout">
-                <section class="surface">
+                <section class="surface application-shell">
                     <div class="stepper">
                         <div class="step active">1. Personal</div>
                         <div class="step">2. Professional</div>
@@ -52,7 +95,18 @@
 
                         <div class="form-step" data-step="2">
                             <div class="field-grid">
-                                <label class="field"><span>Qualification</span><input id="qualification" type="text"></label>
+                                <label class="field">
+                                    <span>Qualification</span>
+                                    <select id="qualification">
+                                        <option value="">Select qualification</option>
+                                        <option>10th Pass</option>
+                                        <option>12th Pass</option>
+                                        <option>ITI</option>
+                                        <option>Diploma</option>
+                                        <option>Graduate</option>
+                                        <option>Post Graduate</option>
+                                    </select>
+                                </label>
                                 <label class="field"><span>Experience (Years)</span><input id="experience" type="number" min="0" max="25"></label>
                                 <label class="field"><span>Current Title</span><input id="current_title" type="text"></label>
                                 <label class="field"><span>LinkedIn</span><input id="linkedin" type="url"></label>
@@ -81,7 +135,7 @@
                     </form>
                 </section>
 
-                <aside class="surface sidebar-stack">
+                <aside class="surface sidebar-stack application-sidebar">
                     <div>
                         <span class="eyebrow">Selected Job</span>
                         <div id="apply-job-summary" class="summary-list"></div>
@@ -98,6 +152,10 @@
                             <span class="trust-badge">SSL</span>
                             <span class="trust-badge">Refundable Fee</span>
                         </div>
+                    </div>
+                    <div class="recruitment-note">
+                        <span class="eyebrow">Why This Flow</span>
+                        <p>Built to feel like a large-company hiring funnel with cleaner information hierarchy, strong visual confidence, and mobile-friendly application steps.</p>
                     </div>
                 </aside>
             </div>

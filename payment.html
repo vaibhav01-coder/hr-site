@@ -22,9 +22,9 @@
     <main class="section">
         <div class="container narrow">
             <div class="page-head">
-                <span class="eyebrow">Razorpay Checkout Preview</span>
-                <h1>Payment page</h1>
-                <p>Frontend-only checkout preview for the documented Rs. 50 refundable fee.</p>
+                <span class="eyebrow">Secure Fee Payment</span>
+                <h1>Complete application payment</h1>
+                <p>Pay the refundable application fee using Razorpay secure checkout.</p>
             </div>
             <div class="surface">
                 <div id="payment-job-summary" class="summary-list"></div>
@@ -36,14 +36,19 @@
                 <div class="badge-row" style="margin:16px 0;">
                     <span class="trust-badge">PCI-DSS Level 1</span>
                     <span class="trust-badge">SSL Secured</span>
-                    <span class="trust-badge">Razorpay Ready</span>
+                    <span class="trust-badge">Razorpay Integrated</span>
                 </div>
-                <button type="button" class="btn btn-primary full-width" id="confirm-payment-btn">Simulate Payment Success</button>
+                <div class="info-box" id="payment-status-box">
+                    <strong>Status:</strong> Razorpay checkout is ready. Click below to continue.
+                </div>
+                <button type="button" class="btn btn-primary full-width" id="confirm-payment-btn">Pay Rs. 50 with Razorpay</button>
                 <a class="btn btn-outline full-width" id="back-to-apply-link" href="apply.html" style="margin-top:12px;">Return to Application</a>
             </div>
         </div>
     </main>
     <div id="toast-root" class="toast-root"></div>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="payment-config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
