@@ -4,6 +4,8 @@ const nodemailer = require("nodemailer");
 const app = express();
 app.use(express.json());
 
+const DEFAULT_HR_EMAIL = "arvinddamor1444@gmail.com";
+
 const mailer = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT || 587),
@@ -22,7 +24,7 @@ app.post("/api/applications/notify-hr", async (req, res) => {
             return res.status(400).json({ message: "Missing application email fields." });
         }
 
-        if (!process.env.HR_EMAIL_TO || !process.env.SMTP_HOST) {
+        if (!process.env.SMTP_HOST) {
             return res.status(500).json({ message: "Email server configuration is incomplete." });
         }
 
@@ -56,10 +58,16 @@ app.post("/api/applications/notify-hr", async (req, res) => {
         ];
 
         await mailer.sendMail({
-            from: process.env.HR_EMAIL_FROM || process.env.SMTP_USER,
-            to: process.env.HR_EMAIL_TO,
+            from: process.env.HR_EMAIL_FROM || process.env.SMTP_USER || DEFAULT_HR_EMAIL,
+            to: process.env.HR_EMAIL_TO || DEFAULT_HR_EMAIL,
             subject: `New application for ${jobTitle}`,
-            text: lines.join("\n")
+            text: lines.join("\n"),
+            attachments: [
+                {
+                    filename: resume.fileName || "resume",
+                    path: resume.signedUrl
+                }
+            ]
         });
 
         return res.json({ sent: true });
