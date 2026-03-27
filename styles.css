@@ -948,6 +948,7 @@ p { color: var(--muted); line-height: 1.65; }
 .pro-hero-grid,
 .pro-trust-grid,
 .pro-poster-grid,
+.pro-contact-grid,
 .pro-feature-grid,
 .pro-footer-grid {
     display: grid;
@@ -1201,6 +1202,32 @@ p { color: var(--muted); line-height: 1.65; }
 .pro-jobs-section #featured-jobs .job-list-card {
     border-radius: 28px;
 }
+.pro-contact-grid {
+    grid-template-columns: repeat(3, 1fr);
+}
+.pro-contact-card {
+    display: grid;
+    gap: 12px;
+    padding: 28px;
+    border-radius: 28px;
+    background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(243,248,253,.92));
+    border: 1px solid rgba(18,48,91,.08);
+    box-shadow: 0 24px 48px rgba(9,25,47,.08);
+}
+.pro-contact-card h3 {
+    color: var(--navy);
+    font-size: 1.45rem;
+}
+.pro-contact-link {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--navy);
+    word-break: break-word;
+}
+.pro-contact-link:hover {
+    text-decoration: underline;
+}
 .pro-feature-grid {
     grid-template-columns: repeat(3, 1fr);
 }
@@ -1232,7 +1259,7 @@ p { color: var(--muted); line-height: 1.65; }
 }
 
 @media (max-width: 960px) {
-    .hero-grid, .hero-stage-grid, .job-detail-layout, .apply-layout, .split-banner, .cards-grid, .feature-grid, .stats-grid, .footer-grid, .poster-grid, .recruitment-showcase, .poster-salary-grid, .hero-mini-stats, .poster-gallery, .premium-band-inner, .premium-metrics, .hero-stats-row, .hero-dashboard-body, .poster-gallery-shell, .home-band-inner, .hero-insight-strip, .pro-hero-grid, .pro-trust-grid, .pro-section-head, .pro-poster-grid, .pro-feature-grid, .pro-cta, .pro-footer-grid, .pro-dashboard-metrics, .pro-hero-points { grid-template-columns: 1fr; }
+    .hero-grid, .hero-stage-grid, .job-detail-layout, .apply-layout, .split-banner, .cards-grid, .feature-grid, .stats-grid, .footer-grid, .poster-grid, .recruitment-showcase, .poster-salary-grid, .hero-mini-stats, .poster-gallery, .premium-band-inner, .premium-metrics, .hero-stats-row, .hero-dashboard-body, .poster-gallery-shell, .home-band-inner, .hero-insight-strip, .pro-hero-grid, .pro-trust-grid, .pro-section-head, .pro-poster-grid, .pro-contact-grid, .pro-feature-grid, .pro-cta, .pro-footer-grid, .pro-dashboard-metrics, .pro-hero-points { grid-template-columns: 1fr; }
     .hero-points { grid-template-columns: 1fr; }
     .hero-floating-card { position: static; margin-top: 14px; width: 100%; }
     .hero-insight-strip { position: static; width: 100%; margin-top: 16px; }
