@@ -2,6 +2,9 @@ const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const jwt = require("jsonwebtoken");
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
 const config = require("./config");
 const { serviceClient, authClient } = require("./supabase");
 const { requireAuth, requireRole } = require("./auth-middleware");
@@ -20,9 +23,24 @@ const ALLOWED_RESUME_TYPES = new Set([
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 ]);
+const LOCAL_ORIGIN_REGEX = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+const LOCAL_DB_PATH = path.join(__dirname, "..", "local-db.json");
+const LOCAL_UPLOADS_DIR = path.join(__dirname, "..", "uploads", "resumes");
+
+function isCorsOriginAllowed(origin) {
+  if (!origin) return true;
+  if (config.allowAllOrigins) return true;
+  if (LOCAL_ORIGIN_REGEX.test(origin)) return true;
+  return config.frontendOrigins.includes(origin);
+}
 
 app.use(cors({
-  origin: config.frontendOrigin === "*" ? true : config.frontendOrigin,
+  origin: (origin, callback) => {
+    if (isCorsOriginAllowed(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: false
 }));
 app.use(express.json({ limit: "8mb" }));
@@ -86,7 +104,144 @@ function firstRelationObject(value) {
   return value || null;
 }
 
+function createDefaultLocalJobs() {
+  const now = new Date().toISOString();
+  return [
+    {
+      id: crypto.randomUUID(),
+      title: "Production Operator",
+      company_name: "Raicam Industries",
+      description: "Operate production lines and maintain output targets.",
+      department: "Production",
+      location: "Sanand, Gujarat",
+      job_type: "full_time",
+      salary_range: "Rs. 16,000 - Rs. 22,000",
+      skills_required: ["Machine Operation", "Quality Check", "Assembly"],
+      perks: "Bus, canteen, attendance incentives",
+      is_active: true,
+      created_at: now
+    },
+    {
+      id: crypto.randomUUID(),
+      title: "Quality Inspector",
+      company_name: "Raicam Industries",
+      description: "Inspect materials and finished goods, maintain quality reports.",
+      department: "Quality",
+      location: "Ahmedabad, Gujarat",
+      job_type: "full_time",
+      salary_range: "Rs. 18,000 - Rs. 24,000",
+      skills_required: ["Inspection", "Documentation", "Measurement Tools"],
+      perks: "Canteen, transport, uniform",
+      is_active: true,
+      created_at: now
+    },
+    {
+      id: crypto.randomUUID(),
+      title: "Warehouse Assistant",
+      company_name: "Prime Logistics",
+      description: "Handle inventory, dispatch, and warehouse operations.",
+      department: "Operations",
+      location: "Sanand, Gujarat",
+      job_type: "contract",
+      salary_range: "Rs. 14,000 - Rs. 18,000",
+      skills_required: ["Inventory", "Packing", "Dispatch"],
+      perks: "Night allowance, shift meal",
+      is_active: true,
+      created_at: now
+    }
+  ];
+}
+
+function ensureLocalDb() {
+  const localDir = path.dirname(LOCAL_DB_PATH);
+  if (!fs.existsSync(localDir)) {
+    fs.mkdirSync(localDir, { recursive: true });
+  }
+  if (!fs.existsSync(LOCAL_UPLOADS_DIR)) {
+    fs.mkdirSync(LOCAL_UPLOADS_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(LOCAL_DB_PATH)) {
+    const initialData = {
+      users: [],
+      jobs: createDefaultLocalJobs(),
+      applications: []
+    };
+    fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(initialData, null, 2), "utf8");
+  }
+}
+
+function readLocalDb() {
+  ensureLocalDb();
+  try {
+    const raw = fs.readFileSync(LOCAL_DB_PATH, "utf8");
+    const parsed = JSON.parse(raw);
+    return {
+      users: Array.isArray(parsed.users) ? parsed.users : [],
+      jobs: Array.isArray(parsed.jobs) ? parsed.jobs : [],
+      applications: Array.isArray(parsed.applications) ? parsed.applications : []
+    };
+  } catch (error) {
+    return { users: [], jobs: createDefaultLocalJobs(), applications: [] };
+  }
+}
+
+function writeLocalDb(data) {
+  ensureLocalDb();
+  fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(data, null, 2), "utf8");
+}
+
+function getRequestBaseUrl(req) {
+  const host = req.get("host") || `localhost:${config.port}`;
+  return `${req.protocol}://${host}`;
+}
+
+function getLocalResumePublicUrl(req, resumeFileName) {
+  if (!resumeFileName) return null;
+  return `${getRequestBaseUrl(req)}/uploads/resumes/${encodeURIComponent(resumeFileName)}`;
+}
+
+function saveLocalResumeFile(file, fullName, userId) {
+  ensureLocalDb();
+  const extension = file.originalname.includes(".")
+    ? file.originalname.split(".").pop().toLowerCase()
+    : "pdf";
+  const fileName = `${userId}-${Date.now()}-${safeFileName(fullName)}.${extension}`;
+  const absolutePath = path.join(LOCAL_UPLOADS_DIR, fileName);
+  fs.writeFileSync(absolutePath, file.buffer);
+  return {
+    resume_file_name: fileName,
+    resume_path: `uploads/resumes/${fileName}`
+  };
+}
+
+function getLocalUserById(db, userId) {
+  return db.users.find((item) => item.id === userId) || null;
+}
+
+function mapLocalUserForResponse(req, user) {
+  if (!user) return null;
+  return {
+    id: user.id,
+    full_name: user.full_name || "",
+    email: user.email || "",
+    phone: user.phone || "",
+    role: user.role || "candidate",
+    dob: user.dob || null,
+    gender: user.gender || null,
+    address: user.address || null,
+    qualification: user.qualification || null,
+    experience_years: user.experience_years ?? null,
+    current_title: user.current_title || null,
+    skills: Array.isArray(user.skills) ? user.skills : [],
+    linkedin_url: user.linkedin_url || null,
+    resume_path: user.resume_path || null,
+    resume_url: getLocalResumePublicUrl(req, user.resume_file_name),
+    created_at: user.created_at || null
+  };
+}
+
 async function createResumeSignedUrl(resumePath, expiresInSeconds = 60 * 60 * 24) {
+  if (config.useLocalMode) return resumePath || null;
   if (!resumePath) return null;
   const signed = await serviceClient.storage
     .from(config.resumesBucket)
@@ -95,8 +250,19 @@ async function createResumeSignedUrl(resumePath, expiresInSeconds = 60 * 60 * 24
   return signed.data.signedUrl;
 }
 
+if (config.useLocalMode) {
+  ensureLocalDb();
+  app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+}
+
 app.get("/api/health", (req, res) => {
-  res.json({ ok: true, message: "HR portal backend is running." });
+  res.json({
+    ok: true,
+    mode: config.useLocalMode ? "local" : "supabase",
+    message: config.useLocalMode
+      ? "HR portal backend is running in local mode."
+      : "HR portal backend is running."
+  });
 });
 
 app.post("/api/auth/register", upload.single("resume"), async (req, res) => {
@@ -133,6 +299,48 @@ app.post("/api/auth/register", upload.single("resume"), async (req, res) => {
     const normalGender = gender ? parseGender(gender) : null;
     if (gender && !normalGender) {
       return res.status(400).json({ message: "Gender must be male, female, or other." });
+    }
+
+    if (config.useLocalMode) {
+      const db = readLocalDb();
+      const existing = db.users.find((item) => String(item.email || "").toLowerCase() === normalEmail);
+      if (existing) {
+        return res.status(409).json({ message: "Email is already registered." });
+      }
+
+      createdUserId = crypto.randomUUID();
+      const resumeInfo = saveLocalResumeFile(req.file, full_name, createdUserId);
+      const localUser = {
+        id: createdUserId,
+        full_name: String(full_name).trim(),
+        email: normalEmail,
+        phone: String(phone).trim(),
+        password: String(password),
+        role: "candidate",
+        dob: dob || null,
+        gender: normalGender,
+        address: address || null,
+        qualification: qualification || null,
+        experience_years: parseNumber(experience_years),
+        current_title: current_title || null,
+        skills: parseSkills(skills),
+        linkedin_url: linkedin_url || null,
+        resume_path: resumeInfo.resume_path,
+        resume_file_name: resumeInfo.resume_file_name,
+        created_at: new Date().toISOString()
+      };
+
+      db.users.push(localUser);
+      writeLocalDb(db);
+
+      return res.status(201).json({
+        message: "Registration completed successfully.",
+        user: {
+          id: createdUserId,
+          email: normalEmail,
+          role: "candidate"
+        }
+      });
     }
 
     const userCreate = await serviceClient.auth.admin.createUser({
@@ -202,10 +410,29 @@ app.post("/api/auth/register", upload.single("resume"), async (req, res) => {
     });
   } catch (error) {
     if (createdUserId) {
-      try {
-        await serviceClient.auth.admin.deleteUser(createdUserId);
-      } catch (cleanupError) {
-        console.error("Unable to rollback failed registration user:", cleanupError.message);
+      if (config.useLocalMode) {
+        try {
+          const db = readLocalDb();
+          const userIndex = db.users.findIndex((item) => item.id === createdUserId);
+          if (userIndex >= 0) {
+            const [removed] = db.users.splice(userIndex, 1);
+            writeLocalDb(db);
+            if (removed?.resume_file_name) {
+              const resumeAbsPath = path.join(LOCAL_UPLOADS_DIR, removed.resume_file_name);
+              if (fs.existsSync(resumeAbsPath)) {
+                fs.unlinkSync(resumeAbsPath);
+              }
+            }
+          }
+        } catch (cleanupError) {
+          console.error("Unable to rollback failed local registration user:", cleanupError.message);
+        }
+      } else {
+        try {
+          await serviceClient.auth.admin.deleteUser(createdUserId);
+        } catch (cleanupError) {
+          console.error("Unable to rollback failed registration user:", cleanupError.message);
+        }
       }
     }
     return res.status(500).json({ message: error.message || "Registration failed." });
@@ -247,6 +474,42 @@ app.post("/api/auth/login", async (req, res) => {
           email: loginId,
           full_name: "Admin",
           role: "hr_admin"
+        }
+      });
+    }
+
+    if (config.useLocalMode) {
+      if (normalRole === "hr_admin") {
+        return res.status(401).json({ message: "Invalid admin ID or password." });
+      }
+
+      const db = readLocalDb();
+      const user = db.users.find((item) => {
+        const emailMatch = String(item.email || "").toLowerCase() === loginId.toLowerCase();
+        return emailMatch && item.password === password;
+      });
+
+      if (!user) {
+        return res.status(401).json({ message: "Invalid login credentials." });
+      }
+      if (user.role === "hr_admin") {
+        return res.status(403).json({ message: "This account is admin. Use admin login option." });
+      }
+
+      const token = makeToken({
+        sub: user.id,
+        role: user.role || "candidate",
+        email: user.email
+      });
+
+      return res.json({
+        message: "Login successful.",
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name || "",
+          role: user.role || "candidate"
         }
       });
     }
@@ -312,6 +575,15 @@ app.get("/api/auth/me", requireAuth, async (req, res) => {
       });
     }
 
+    if (config.useLocalMode) {
+      const db = readLocalDb();
+      const user = getLocalUserById(db, req.auth.sub);
+      if (!user) {
+        return res.status(404).json({ message: "Profile not found." });
+      }
+      return res.json({ user: mapLocalUserForResponse(req, user) });
+    }
+
     const profileResult = await serviceClient
       .from("profiles")
       .select("id, full_name, email, phone, role, dob, gender, address, qualification, experience_years, current_title, skills, linkedin_url, resume_path, resume_url, created_at")
@@ -348,6 +620,18 @@ app.get("/api/jobs", async (req, res) => {
       }
     }
 
+    if (config.useLocalMode) {
+      const db = readLocalDb();
+      const jobs = (db.jobs || [])
+        .filter((job) => includeInactive || job.is_active !== false)
+        .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")))
+        .map((job) => ({
+          ...job,
+          company_name: getJobCompany(job)
+        }));
+      return res.json({ jobs });
+    }
+
     let query = serviceClient
       .from("jobs")
       .select("*")
@@ -381,6 +665,23 @@ app.get("/api/jobs/:id", async (req, res) => {
       if (!viewer || viewer.role !== "hr_admin") {
         return res.status(403).json({ message: "Admin access required for inactive jobs." });
       }
+    }
+
+    if (config.useLocalMode) {
+      const db = readLocalDb();
+      const job = (db.jobs || []).find((item) => item.id === req.params.id);
+      if (!job) {
+        return res.status(404).json({ message: "Job not found." });
+      }
+      if (!includeInactive && job.is_active === false) {
+        return res.status(404).json({ message: "Job is not active." });
+      }
+      return res.json({
+        job: {
+          ...job,
+          company_name: getJobCompany(job)
+        }
+      });
     }
 
     const jobResult = await serviceClient
@@ -426,6 +727,28 @@ app.post("/api/jobs", requireAuth, requireRole("hr_admin"), async (req, res) => 
 
     if (!title || !location) {
       return res.status(400).json({ message: "Title and location are required." });
+    }
+
+    if (config.useLocalMode) {
+      const db = readLocalDb();
+      const localJob = {
+        id: crypto.randomUUID(),
+        title: String(title).trim(),
+        description: description || null,
+        department: department || null,
+        location: String(location).trim(),
+        job_type: job_type || "full_time",
+        salary_range: salary_range || null,
+        skills_required: parseSkills(skills_required),
+        perks: perks || null,
+        company_name: company_name || "Raicam Industries",
+        is_active: true,
+        created_at: new Date().toISOString()
+      };
+
+      db.jobs.unshift(localJob);
+      writeLocalDb(db);
+      return res.status(201).json({ message: "Job created.", job: localJob });
     }
 
     const insertResult = await serviceClient
@@ -474,6 +797,82 @@ app.post("/api/applications", requireAuth, requireRole("candidate"), async (req,
 
     if (!job_id) {
       return res.status(400).json({ message: "Job ID is required." });
+    }
+
+    if (config.useLocalMode) {
+      const db = readLocalDb();
+      const profile = getLocalUserById(db, req.auth.sub);
+      if (!profile) {
+        return res.status(404).json({ message: "Candidate profile not found." });
+      }
+
+      const job = (db.jobs || []).find((item) => item.id === job_id && item.is_active !== false);
+      if (!job) {
+        return res.status(404).json({ message: "Selected job is not available." });
+      }
+
+      const existing = (db.applications || []).find((item) => item.candidate_id === req.auth.sub && item.job_id === job_id);
+      if (existing) {
+        return res.status(409).json({ message: "You have already applied for this job." });
+      }
+
+      if (full_name) profile.full_name = String(full_name).trim();
+      if (phone) profile.phone = String(phone).trim();
+      if (dob) profile.dob = dob;
+      if (gender) {
+        const normalizedGender = parseGender(gender);
+        if (!normalizedGender) {
+          return res.status(400).json({ message: "Gender must be male, female, or other." });
+        }
+        profile.gender = normalizedGender;
+      }
+      if (address) profile.address = String(address).trim();
+      if (qualification) profile.qualification = String(qualification).trim();
+      if (experience_years !== undefined && experience_years !== null && experience_years !== "") {
+        const parsedExperience = parseNumber(experience_years);
+        if (parsedExperience === null) {
+          return res.status(400).json({ message: "Experience years must be a valid number." });
+        }
+        profile.experience_years = parsedExperience;
+      }
+      if (current_title) profile.current_title = String(current_title).trim();
+      if (skills) profile.skills = parseSkills(skills);
+      if (linkedin_url) profile.linkedin_url = String(linkedin_url).trim();
+
+      const parsedSkills = parseSkills(skills);
+      const finalSkills = parsedSkills.length > 0 ? parsedSkills : parseSkills(profile.skills);
+      const parsedExperience = parseNumber(experience_years);
+      const finalExperience = parsedExperience !== null ? parsedExperience : parseNumber(profile.experience_years);
+
+      const application = {
+        id: crypto.randomUUID(),
+        candidate_id: req.auth.sub,
+        job_id,
+        dob: profile.dob || null,
+        gender: parseGender(profile.gender) || null,
+        address: profile.address || null,
+        qualification: profile.qualification || null,
+        experience_years: finalExperience,
+        current_title: current_title || profile.current_title || null,
+        skills: finalSkills,
+        resume_url: getLocalResumePublicUrl(req, profile.resume_file_name),
+        cover_letter: cover_letter || null,
+        linkedin_url: linkedin_url || profile.linkedin_url || null,
+        status: "under_review",
+        created_at: new Date().toISOString()
+      };
+
+      db.applications.unshift(application);
+      writeLocalDb(db);
+
+      return res.status(201).json({
+        message: "Application submitted successfully.",
+        application: {
+          id: application.id,
+          status: application.status,
+          created_at: application.created_at
+        }
+      });
     }
 
     const profileResult = await serviceClient
@@ -595,6 +994,34 @@ app.post("/api/applications", requireAuth, requireRole("candidate"), async (req,
 
 app.get("/api/applications/my", requireAuth, requireRole("candidate"), async (req, res) => {
   try {
+    if (config.useLocalMode) {
+      const db = readLocalDb();
+      const applications = (db.applications || [])
+        .filter((item) => item.candidate_id === req.auth.sub)
+        .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")))
+        .map((item) => {
+          const job = (db.jobs || []).find((jobItem) => jobItem.id === item.job_id) || null;
+          return {
+            id: item.id,
+            status: item.status,
+            created_at: item.created_at,
+            job_id: item.job_id,
+            jobs: job
+              ? {
+                id: job.id,
+                title: job.title,
+                company_name: getJobCompany(job),
+                location: job.location || null,
+                job_type: job.job_type || null,
+                salary_range: job.salary_range || null
+              }
+              : null
+          };
+        });
+
+      return res.json({ applications });
+    }
+
     const result = await serviceClient
       .from("applications")
       .select("id, status, created_at, job_id, jobs(id, title, company_name, location, job_type, salary_range)")
@@ -613,6 +1040,46 @@ app.get("/api/applications/my", requireAuth, requireRole("candidate"), async (re
 
 app.get("/api/admin/applications", requireAuth, requireRole("hr_admin"), async (req, res) => {
   try {
+    if (config.useLocalMode) {
+      const db = readLocalDb();
+      const applications = (db.applications || [])
+        .slice()
+        .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")))
+        .map((item) => {
+          const profile = getLocalUserById(db, item.candidate_id);
+          const job = (db.jobs || []).find((jobItem) => jobItem.id === item.job_id) || null;
+          return {
+            id: item.id,
+            status: item.status,
+            created_at: item.created_at,
+            candidate_id: item.candidate_id,
+            job_id: item.job_id,
+            profiles: profile
+              ? {
+                full_name: profile.full_name || null,
+                phone: profile.phone || null,
+                email: profile.email || null,
+                resume_url: getLocalResumePublicUrl(req, profile.resume_file_name),
+                resume_path: profile.resume_path || null,
+                qualification: profile.qualification || null,
+                experience_years: profile.experience_years ?? null
+              }
+              : null,
+            jobs: job
+              ? {
+                id: job.id,
+                title: job.title,
+                company_name: getJobCompany(job),
+                location: job.location || null,
+                job_type: job.job_type || null
+              }
+              : null
+          };
+        });
+
+      return res.json({ applications });
+    }
+
     const result = await serviceClient
       .from("applications")
       .select("id, status, created_at, candidate_id, job_id, profiles(full_name, phone, email, resume_url, resume_path, qualification, experience_years), jobs(id, title, company_name, location, job_type)")
@@ -655,6 +1122,23 @@ app.patch("/api/admin/applications/:id/status", requireAuth, requireRole("hr_adm
       return res.status(400).json({ message: "Invalid application status." });
     }
 
+    if (config.useLocalMode) {
+      const db = readLocalDb();
+      const index = (db.applications || []).findIndex((item) => item.id === req.params.id);
+      if (index < 0) {
+        return res.status(404).json({ message: "Application not found." });
+      }
+      db.applications[index].status = status;
+      writeLocalDb(db);
+      return res.json({
+        message: "Application status updated.",
+        application: {
+          id: db.applications[index].id,
+          status: db.applications[index].status
+        }
+      });
+    }
+
     const result = await serviceClient
       .from("applications")
       .update({ status })
@@ -680,5 +1164,5 @@ app.use((req, res) => {
 });
 
 app.listen(config.port, () => {
-  console.log(`HR portal backend running on http://localhost:${config.port}`);
+  console.log(`HR portal backend running on http://localhost:${config.port} (${config.useLocalMode ? "LOCAL MODE" : "SUPABASE MODE"})`);
 });

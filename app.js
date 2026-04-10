@@ -19,6 +19,10 @@ function getApiBaseUrl() {
     return (window.HR_API_CONFIG?.baseUrl || "http://localhost:4000").replace(/\/+$/, "");
 }
 
+function getBackendConnectionMessage() {
+    return `Cannot connect to backend at ${getApiBaseUrl()}. Start backend server and check API/CORS settings.`;
+}
+
 function getCurrentPageName() {
     return document.body?.dataset?.page || "";
 }
@@ -112,11 +116,16 @@ async function apiRequest(path, options = {}) {
         requestBody = JSON.stringify(body);
     }
 
-    const response = await fetch(`${getApiBaseUrl()}${path}`, {
-        method,
-        headers,
-        body: requestBody
-    });
+    let response;
+    try {
+        response = await fetch(`${getApiBaseUrl()}${path}`, {
+            method,
+            headers,
+            body: requestBody
+        });
+    } catch (error) {
+        throw new Error(getBackendConnectionMessage());
+    }
 
     let payload = {};
     try {
@@ -131,6 +140,15 @@ async function apiRequest(path, options = {}) {
     }
 
     return payload;
+}
+
+async function checkApiHealth() {
+    try {
+        await apiRequest("/api/health", { auth: false });
+        return true;
+    } catch (error) {
+        return false;
+    }
 }
 
 async function fetchCurrentUser() {
@@ -888,6 +906,14 @@ function initAuthForms() {
                 return;
             }
 
+            const backendReady = await checkApiHealth();
+            if (!backendReady) {
+                const message = getBackendConnectionMessage();
+                if (status) status.textContent = message;
+                toast(message);
+                return;
+            }
+
             const formData = new FormData();
             formData.append("full_name", fullName);
             formData.append("email", email);
@@ -948,6 +974,14 @@ function initAuthForms() {
             if (!identifier || !password) {
                 if (status) status.textContent = "Please enter login ID and password.";
                 toast("Please enter login ID and password.");
+                return;
+            }
+
+            const backendReady = await checkApiHealth();
+            if (!backendReady) {
+                const message = getBackendConnectionMessage();
+                if (status) status.textContent = message;
+                toast(message);
                 return;
             }
 
