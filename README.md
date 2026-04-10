@@ -18,6 +18,12 @@ Backend now supports **LOCAL MODE** automatically when Supabase keys are not set
    - ID: `admin`
    - Password: `admin123`
 
+### Deployed on Vercel
+
+This repo now includes `api/[...all].js`, so backend routes are available on the same domain:
+- Frontend: `https://your-site.vercel.app`
+- Backend API: `https://your-site.vercel.app/api/...`
+
 ## 2) Supabase Setup (Optional Production Mode)
 
 Run these SQL files in Supabase SQL Editor:

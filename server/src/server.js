@@ -1163,6 +1163,10 @@ app.use((req, res) => {
   res.status(404).json({ message: "Route not found." });
 });
 
-app.listen(config.port, () => {
-  console.log(`HR portal backend running on http://localhost:${config.port} (${config.useLocalMode ? "LOCAL MODE" : "SUPABASE MODE"})`);
-});
+if (require.main === module) {
+  app.listen(config.port, () => {
+    console.log(`HR portal backend running on http://localhost:${config.port} (${config.useLocalMode ? "LOCAL MODE" : "SUPABASE MODE"})`);
+  });
+}
+
+module.exports = app;
