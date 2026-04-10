@@ -24,6 +24,8 @@ This repo now includes `api/[...all].js`, so backend routes are available on the
 - Frontend: `https://your-site.vercel.app`
 - Backend API: `https://your-site.vercel.app/api/...`
 
+If you changed API behavior recently, redeploy and hard-refresh browser once.
+
 ## 2) Supabase Setup (Optional Production Mode)
 
 Run these SQL files in Supabase SQL Editor:

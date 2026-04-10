@@ -19,8 +19,36 @@ function getApiBaseUrl() {
     return (window.HR_API_CONFIG?.baseUrl || "http://localhost:4000").replace(/\/+$/, "");
 }
 
+function getApiBaseCandidates() {
+    const protocol = window.location.protocol === "http:" || window.location.protocol === "https:"
+        ? window.location.protocol
+        : "http:";
+    const host = window.location.hostname || "localhost";
+    const isLocalHost = host === "localhost" || host === "127.0.0.1";
+    const locationOrigin = window.location.origin.replace(/\/+$/, "");
+    const configuredBase = getApiBaseUrl();
+    const candidates = [];
+
+    if (isLocalHost) {
+        const localBase = `${protocol}//${host}:4000`;
+        candidates.push(localBase);
+        if (configuredBase && configuredBase !== localBase) {
+            candidates.push(configuredBase);
+        }
+        return [...new Set(candidates)];
+    }
+
+    // On deployed domains, always prefer same-origin API first.
+    candidates.push(locationOrigin);
+    if (configuredBase && configuredBase !== locationOrigin) {
+        candidates.push(configuredBase);
+    }
+    return [...new Set(candidates)];
+}
+
 function getBackendConnectionMessage() {
-    return `Cannot connect to backend at ${getApiBaseUrl()}. Start backend server and check API/CORS settings.`;
+    const targets = getApiBaseCandidates().join(", ");
+    return `Cannot connect to backend. Tried: ${targets}.`;
 }
 
 function getCurrentPageName() {
@@ -116,15 +144,35 @@ async function apiRequest(path, options = {}) {
         requestBody = JSON.stringify(body);
     }
 
-    let response;
-    try {
-        response = await fetch(`${getApiBaseUrl()}${path}`, {
-            method,
-            headers,
-            body: requestBody
-        });
-    } catch (error) {
-        throw new Error(getBackendConnectionMessage());
+    const baseCandidates = getApiBaseCandidates();
+    let response = null;
+    let lastNetworkError = null;
+
+    for (const baseUrl of baseCandidates) {
+        try {
+            response = await fetch(`${baseUrl}${path}`, {
+                method,
+                headers,
+                body: requestBody
+            });
+            if (response.ok) {
+                break;
+            }
+
+            // If deployed same-origin doesn't have route yet, try next candidate.
+            if ((response.status === 404 || response.status === 405) && baseCandidates.length > 1) {
+                response = null;
+                continue;
+            }
+            break;
+        } catch (error) {
+            lastNetworkError = error;
+            response = null;
+        }
+    }
+
+    if (!response) {
+        throw new Error(lastNetworkError?.message ? getBackendConnectionMessage() : getBackendConnectionMessage());
     }
 
     let payload = {};

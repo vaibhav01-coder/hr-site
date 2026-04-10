@@ -4,6 +4,7 @@ const multer = require("multer");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
 const crypto = require("crypto");
 const config = require("./config");
 const { serviceClient, authClient } = require("./supabase");
@@ -24,8 +25,13 @@ const ALLOWED_RESUME_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 ]);
 const LOCAL_ORIGIN_REGEX = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
-const LOCAL_DB_PATH = path.join(__dirname, "..", "local-db.json");
-const LOCAL_UPLOADS_DIR = path.join(__dirname, "..", "uploads", "resumes");
+const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const LOCAL_STORAGE_ROOT = IS_SERVERLESS
+  ? path.join(os.tmpdir(), "hr-portal-local")
+  : path.join(__dirname, "..");
+const LOCAL_DB_PATH = path.join(LOCAL_STORAGE_ROOT, "local-db.json");
+const LOCAL_UPLOADS_ROOT = path.join(LOCAL_STORAGE_ROOT, "uploads");
+const LOCAL_UPLOADS_DIR = path.join(LOCAL_UPLOADS_ROOT, "resumes");
 
 function isCorsOriginAllowed(origin) {
   if (!origin) return true;
@@ -157,6 +163,9 @@ function ensureLocalDb() {
   if (!fs.existsSync(localDir)) {
     fs.mkdirSync(localDir, { recursive: true });
   }
+  if (!fs.existsSync(LOCAL_UPLOADS_ROOT)) {
+    fs.mkdirSync(LOCAL_UPLOADS_ROOT, { recursive: true });
+  }
   if (!fs.existsSync(LOCAL_UPLOADS_DIR)) {
     fs.mkdirSync(LOCAL_UPLOADS_DIR, { recursive: true });
   }
@@ -252,7 +261,7 @@ async function createResumeSignedUrl(resumePath, expiresInSeconds = 60 * 60 * 24
 
 if (config.useLocalMode) {
   ensureLocalDb();
-  app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+  app.use("/uploads", express.static(LOCAL_UPLOADS_ROOT));
 }
 
 app.get("/api/health", (req, res) => {
