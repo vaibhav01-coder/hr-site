@@ -11,24 +11,53 @@
 </head>
 <body data-page="register">
     <main class="auth-shell">
-        <section class="surface auth-card">
+        <section class="surface auth-card auth-card-wide">
             <span class="eyebrow">Candidate Registration</span>
-            <h1>Create your account</h1>
-            <p>Create your account with email and password. Full name and phone are also saved in your profile.</p>
+            <h1>Create your user account</h1>
+            <p>Complete all details and upload resume once. You can then login and apply for jobs directly.</p>
             <form id="register-form" class="auth-form">
-                <label class="field"><span>Full Name</span><input id="register-name" type="text" required></label>
-                <label class="field"><span>Email Address</span><input id="register-email" type="email" required></label>
-                <label class="field"><span>Phone Number</span><input id="register-phone" type="tel" required></label>
-                <label class="field"><span>Password</span><input id="register-password" type="password" minlength="6" required></label>
-                <button type="submit" class="btn btn-primary full-width">Register</button>
+                <div class="field-grid">
+                    <label class="field"><span>Full Name *</span><input id="register-name" type="text" required></label>
+                    <label class="field"><span>Email Address *</span><input id="register-email" type="email" required></label>
+                    <label class="field"><span>Phone Number *</span><input id="register-phone" type="tel" required></label>
+                    <label class="field"><span>Password *</span><input id="register-password" type="password" minlength="6" required></label>
+                    <label class="field"><span>Date of Birth</span><input id="register-dob" type="date"></label>
+                    <label class="field">
+                        <span>Gender</span>
+                        <select id="register-gender">
+                            <option value="">Select</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>Qualification</span>
+                        <select id="register-qualification">
+                            <option value="">Select qualification</option>
+                            <option>10th Pass</option>
+                            <option>12th Pass</option>
+                            <option>ITI</option>
+                            <option>Diploma</option>
+                            <option>Graduate</option>
+                            <option>Post Graduate</option>
+                        </select>
+                    </label>
+                    <label class="field"><span>Experience (Years)</span><input id="register-experience" type="number" min="0" max="25"></label>
+                    <label class="field"><span>Current Title</span><input id="register-current-title" type="text"></label>
+                    <label class="field"><span>LinkedIn URL</span><input id="register-linkedin" type="url"></label>
+                    <label class="field full"><span>Skills (comma separated)</span><input id="register-skills" type="text" placeholder="Machine Operation, Quality Check"></label>
+                    <label class="field full"><span>Address</span><textarea id="register-address" rows="3"></textarea></label>
+                    <label class="field full"><span>Resume Upload * (PDF/DOC/DOCX, max 5MB)</span><input id="register-resume" type="file" accept=".pdf,.doc,.docx" required></label>
+                </div>
+                <button id="register-submit" type="submit" class="btn btn-primary full-width">Register</button>
             </form>
             <p class="muted-line" id="register-status">Submit the form to create your account.</p>
             <p class="muted-line">Already have an account? <a href="login.html">Login</a></p>
         </section>
     </main>
     <div id="toast-root" class="toast-root"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js"></script>
+    <script src="api-config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

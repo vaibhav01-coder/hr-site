@@ -16,6 +16,7 @@
             <nav class="site-nav inline-nav">
                 <a href="jobs.html">Jobs</a>
                 <a href="dashboard.html">Dashboard</a>
+                <a href="#" data-logout>Logout</a>
             </nav>
         </div>
     </header>
@@ -84,10 +85,10 @@
                         <div class="form-step active" data-step="1">
                             <div class="field-grid">
                                 <label class="field"><span>Full Name</span><input id="full_name" type="text"></label>
-                                <label class="field"><span>Email Address</span><input id="email" type="email"></label>
+                                <label class="field"><span>Email Address</span><input id="email" type="email" readonly></label>
                                 <label class="field"><span>Phone Number</span><input id="phone" type="tel"></label>
                                 <label class="field"><span>Date of Birth</span><input id="dob" type="date"></label>
-                                <label class="field"><span>Gender</span><select id="gender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></label>
+                                <label class="field"><span>Gender</span><select id="gender"><option value="">Select</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></label>
                                 <label class="field full"><span>Address</span><textarea id="address" rows="3"></textarea></label>
                             </div>
                         </div>
@@ -115,11 +116,10 @@
 
                         <div class="form-step" data-step="3">
                             <div class="field-grid">
-                                <label class="field full"><span>Resume Upload</span><input id="resume" type="file" accept=".pdf,.doc,.docx"></label>
                                 <label class="field full"><span>Cover Letter</span><textarea id="cover_letter" rows="5"></textarea></label>
                             </div>
-                            <div class="info-box"><strong>Allowed files:</strong> PDF or DOC up to 5MB.</div>
-                            <div class="info-box"><strong>HR notification:</strong> After final submit, your resume is uploaded to Supabase and HR receives an email with the application details and resume link.</div>
+                            <div id="resume-note" class="info-box"><strong>Resume:</strong> Your resume from registration will be attached with your application.</div>
+                            <div class="info-box"><strong>HR review:</strong> After submit, admin can review your resume and update your status from the HR panel.</div>
                         </div>
 
                         <div class="form-step" data-step="4">
@@ -148,8 +148,8 @@
                         <span class="eyebrow">Trust</span>
                         <div class="badge-row">
                             <span class="trust-badge">SSL</span>
-                            <span class="trust-badge">Resume Upload</span>
-                            <span class="trust-badge">HR Notified</span>
+                            <span class="trust-badge">Registered Resume</span>
+                            <span class="trust-badge">Status Tracking</span>
                         </div>
                     </div>
                     <div class="recruitment-note">
@@ -162,8 +162,7 @@
     </main>
 
     <div id="toast-root" class="toast-root"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js"></script>
+    <script src="api-config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

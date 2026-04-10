@@ -1,109 +1,80 @@
-const jobs = [
-    {
-        id: "job-1",
-        title: "Production Operator",
-        company: "Raicam Industries",
-        department: "Production",
-        location: "Sanand, Gujarat",
-        job_type: "full_time",
-        salary_range: "Rs. 16,000 - Rs. 22,000",
-        skills_required: ["Machine Operation", "Quality Check", "Assembly"],
-        description: "Operate production lines, maintain daily output targets, and follow safety procedures.",
-        perks: "Bus, canteen, attendance incentives",
-        applicants: 42
-    },
-    {
-        id: "job-2",
-        title: "Quality Inspector",
-        company: "Raicam Industries",
-        department: "Quality",
-        location: "Ahmedabad, Gujarat",
-        job_type: "full_time",
-        salary_range: "Rs. 18,000 - Rs. 24,000",
-        skills_required: ["Inspection", "Documentation", "Measurement Tools"],
-        description: "Inspect materials and finished goods, prepare shift reports, and coordinate with production teams.",
-        perks: "Canteen, transport, uniform",
-        applicants: 18
-    },
-    {
-        id: "job-3",
-        title: "Warehouse Assistant",
-        company: "Prime Logistics",
-        department: "Operations",
-        location: "Sanand, Gujarat",
-        job_type: "contract",
-        salary_range: "Rs. 14,000 - Rs. 18,000",
-        skills_required: ["Inventory", "Packing", "Dispatch"],
-        description: "Handle inventory, packing, dispatch coordination, and warehouse checks.",
-        perks: "Night allowance, shift meal",
-        applicants: 26
-    },
-    {
-        id: "job-4",
-        title: "HR Executive",
-        company: "Talent Edge",
-        department: "Human Resources",
-        location: "Remote / Ahmedabad",
-        job_type: "part_time",
-        salary_range: "Rs. 20,000 - Rs. 28,000",
-        skills_required: ["Recruitment", "Screening", "Communication"],
-        description: "Assist in candidate sourcing, interview scheduling, onboarding, and reporting.",
-        perks: "Hybrid work, flexible hours",
-        applicants: 11
-    }
-];
-
-const applications = [
-    { id: "app-1", candidate: "Ravi Kumar", jobId: "job-1", experience: "2 years", status: "under_review", steps: [true, true, false, false] },
-    { id: "app-2", candidate: "Sneha Patel", jobId: "job-2", experience: "3 years", status: "shortlisted", steps: [true, true, true, false] },
-    { id: "app-3", candidate: "Aman Singh", jobId: "job-3", experience: "1 year", status: "rejected", steps: [true, true, true, true] }
-];
-
 const qs = (selector) => document.querySelector(selector);
 const qsa = (selector) => [...document.querySelectorAll(selector)];
 const params = () => new URLSearchParams(window.location.search);
-const getJob = (jobId) => jobs.find((job) => job.id === jobId) || jobs[0];
-let supabaseClient = null;
-const ALLOWED_RESUME_TYPES = [
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-];
+
+const SESSION_KEY = "hr_portal_session_v1";
+const CANDIDATE_ONLY_PAGES = new Set(["dashboard", "apply"]);
+const ADMIN_ONLY_PAGES = new Set(["hr-dashboard", "hr-applicants"]);
+const AUTH_PAGES = new Set(["login", "register"]);
 const MAX_RESUME_SIZE = 5 * 1024 * 1024;
+const ALLOWED_RESUME_EXTENSIONS = [".pdf", ".doc", ".docx"];
+const STATUS_OPTIONS = ["under_review", "shortlisted", "hired", "rejected"];
 
-function getApplicationConfig() {
-    return window.HR_APPLICATION_CONFIG || null;
+const jobCache = {
+    active: null,
+    all: null
+};
+
+function getApiBaseUrl() {
+    return (window.HR_API_CONFIG?.baseUrl || "http://localhost:4000").replace(/\/+$/, "");
 }
 
-async function postJson(url, body) {
-    const response = await fetch(url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(body)
+function getCurrentPageName() {
+    return document.body?.dataset?.page || "";
+}
+
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function formatStatus(value) {
+    return String(value || "")
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatDate(value) {
+    if (!value) return "N/A";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "N/A";
+    return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
     });
-
-    let payload = {};
-    try {
-        payload = await response.json();
-    } catch (error) {
-        payload = {};
-    }
-
-    if (!response.ok) {
-        throw new Error(payload.message || "Request failed.");
-    }
-
-    return payload;
 }
 
-function getSupabaseClient() {
-    if (supabaseClient) return supabaseClient;
-    const config = window.HR_SUPABASE_CONFIG;
-    if (!window.supabase || !config || !config.url || !config.anonKey) return null;
-    supabaseClient = window.supabase.createClient(config.url, config.anonKey);
-    return supabaseClient;
+function roleHomePage(role) {
+    return role === "hr_admin" ? "hr-dashboard.html" : "dashboard.html";
+}
+
+function getSession() {
+    try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object" || !parsed.token) return null;
+        return parsed;
+    } catch (error) {
+        return null;
+    }
+}
+
+function setSession(token, user) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ token, user }));
+}
+
+function clearSession() {
+    localStorage.removeItem(SESSION_KEY);
+}
+
+function getAuthToken() {
+    return getSession()?.token || "";
 }
 
 function toast(message) {
@@ -116,8 +87,83 @@ function toast(message) {
     window.setTimeout(() => item.remove(), 2800);
 }
 
+async function apiRequest(path, options = {}) {
+    const {
+        method = "GET",
+        body,
+        formData,
+        auth = true
+    } = options;
+
+    const headers = {};
+    if (auth) {
+        const token = getAuthToken();
+        if (!token) {
+            throw new Error("Please sign in first.");
+        }
+        headers.Authorization = `Bearer ${token}`;
+    }
+
+    let requestBody;
+    if (formData) {
+        requestBody = formData;
+    } else if (body !== undefined) {
+        headers["Content-Type"] = "application/json";
+        requestBody = JSON.stringify(body);
+    }
+
+    const response = await fetch(`${getApiBaseUrl()}${path}`, {
+        method,
+        headers,
+        body: requestBody
+    });
+
+    let payload = {};
+    try {
+        payload = await response.json();
+    } catch (error) {
+        payload = {};
+    }
+
+    if (!response.ok) {
+        if (response.status === 401) clearSession();
+        throw new Error(payload.message || "Request failed.");
+    }
+
+    return payload;
+}
+
+async function fetchCurrentUser() {
+    const session = getSession();
+    if (!session?.token) return null;
+    const response = await apiRequest("/api/auth/me", { auth: true });
+    setSession(session.token, response.user);
+    return response.user;
+}
+
+function initCookieBanner() {
+    const banner = qs("#cookie-banner");
+    if (!banner) return;
+
+    if (!localStorage.getItem("hr_cookie_accept")) {
+        banner.classList.add("show");
+    }
+
+    qs("#accept-cookies")?.addEventListener("click", () => {
+        localStorage.setItem("hr_cookie_accept", "1");
+        banner.classList.remove("show");
+    });
+}
+
+function initMenu() {
+    const toggle = qs("#menu-toggle");
+    const nav = qs("#site-nav");
+    if (!toggle || !nav) return;
+    toggle.addEventListener("click", () => nav.classList.toggle("open"));
+}
+
 function initRevealAnimations() {
-    const items = qsa(".reveal, .card, .job-list-card, .feature-card, .panel-card, .point-card, .poster-card, .stat-box, .app-card");
+    const items = qsa(".reveal, .card, .job-list-card, .feature-card, .panel-card, .point-card, .poster-card, .stat-box, .app-card, .role-card");
     if (!items.length) return;
 
     items.forEach((item, index) => {
@@ -137,208 +183,107 @@ function initRevealAnimations() {
                 observer.unobserve(entry.target);
             }
         });
-    }, {
-        threshold: 0.14
-    });
+    }, { threshold: 0.14 });
 
     items.forEach((item) => observer.observe(item));
 }
 
-function slugify(value) {
-    return (value || "candidate")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "")
-        .slice(0, 50) || "candidate";
+function firstRelationObject(value) {
+    if (Array.isArray(value)) return value[0] || null;
+    return value || null;
 }
 
-function getResumeExtension(fileName) {
-    const parts = (fileName || "").split(".");
-    return parts.length > 1 ? parts.pop().toLowerCase() : "pdf";
+async function getJobs(includeInactive = false) {
+    const key = includeInactive ? "all" : "active";
+    if (jobCache[key]) return jobCache[key];
+
+    const suffix = includeInactive ? "?all=1" : "";
+    const data = await apiRequest(`/api/jobs${suffix}`, { auth: false });
+    jobCache[key] = Array.isArray(data.jobs) ? data.jobs : [];
+    return jobCache[key];
 }
 
-function normaliseGender(value) {
-    const text = (value || "").trim().toLowerCase();
-    if (text === "male" || text === "female" || text === "other") return text;
-    return null;
-}
-
-function normaliseSkills(value) {
-    return (value || "")
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean);
-}
-
-async function getCurrentUser(client) {
-    const { data, error } = await client.auth.getUser();
-    if (error) throw error;
-    return data.user || null;
-}
-
-async function uploadResumeToSupabase(client, job, applicantData, resumeFile) {
-    const applicationConfig = getApplicationConfig();
-    if (!applicationConfig?.resumesBucket) {
-        throw new Error("Resume bucket configuration is missing.");
-    }
-
-    const fileExt = getResumeExtension(resumeFile.name);
-    const safeName = slugify(applicantData.fullName || applicantData.email || applicantData.phone);
-    const path = `${job.id}/${Date.now()}-${safeName}.${fileExt}`;
-
-    const { error: uploadError } = await client.storage
-        .from(applicationConfig.resumesBucket)
-        .upload(path, resumeFile, {
-            cacheControl: "3600",
-            upsert: false
-        });
-
-    if (uploadError) throw uploadError;
-
-    const { data: signedUrlData, error: signedUrlError } = await client.storage
-        .from(applicationConfig.resumesBucket)
-        .createSignedUrl(path, 60 * 60 * 24 * 7);
-
-    if (signedUrlError) throw signedUrlError;
-
-    return {
-        path,
-        signedUrl: signedUrlData.signedUrl
-    };
-}
-
-async function saveApplicationToSupabase(client, job, user, applicantData, resumeUpload) {
-    const payload = {
-        candidate_id: user.id,
-        job_ref: job.id,
-        job_title: job.title,
-        company_name: job.company,
-        full_name: applicantData.fullName,
-        email: applicantData.email,
-        phone: applicantData.phone,
-        dob: applicantData.dob || null,
-        gender: normaliseGender(applicantData.gender),
-        address: applicantData.address || null,
-        qualification: applicantData.qualification || null,
-        experience_years: applicantData.experience ? Number(applicantData.experience) : null,
-        current_title: applicantData.currentTitle || null,
-        skills: normaliseSkills(applicantData.skills),
-        resume_path: resumeUpload.path,
-        resume_url: resumeUpload.signedUrl,
-        resume_file_name: applicantData.resumeFileName,
-        cover_letter: applicantData.coverLetter || null,
-        linkedin_url: applicantData.linkedin || null,
-        status: "under_review"
-    };
-
-    const { data, error } = await client
-        .from("candidate_applications")
-        .insert(payload)
-        .select("id, created_at")
-        .single();
-
-    if (error) throw error;
-    return data;
-}
-
-async function notifyHrByEmail(job, applicantData, resumeUpload, applicationRecord) {
-    const applicationConfig = getApplicationConfig();
-    if (!applicationConfig?.notifyEndpoint) {
-        throw new Error("HR notify endpoint is missing.");
-    }
-
-    return postJson(applicationConfig.notifyEndpoint, {
-        applicationId: applicationRecord.id,
-        submittedAt: applicationRecord.created_at,
-        jobId: job.id,
-        jobTitle: job.title,
-        company: job.company,
-        applicant: applicantData,
-        resume: {
-            fileName: applicantData.resumeFileName,
-            path: resumeUpload.path,
-            signedUrl: resumeUpload.signedUrl
-        }
-    });
-}
-
-function initCookieBanner() {
-    const banner = qs("#cookie-banner");
-    if (!banner) return;
-    if (!localStorage.getItem("hr_cookie_accept")) banner.classList.add("show");
-    qs("#accept-cookies")?.addEventListener("click", () => {
-        localStorage.setItem("hr_cookie_accept", "1");
-        banner.classList.remove("show");
-    });
-}
-
-function initMenu() {
-    const toggle = qs("#menu-toggle");
-    const nav = qs("#site-nav");
-    if (!toggle || !nav) return;
-    toggle.addEventListener("click", () => nav.classList.toggle("open"));
+function getJobTypeLabel(jobType) {
+    return formatStatus(jobType || "full_time");
 }
 
 function featuredCard(job) {
     return `
         <article class="card">
             <div class="card-head">
-                <div><h3>${job.title}</h3><p>${job.company}</p></div>
-                <span class="status-pill">${job.job_type.replace("_", " ")}</span>
+                <div><h3>${escapeHtml(job.title)}</h3><p>${escapeHtml(job.company_name || "Company")}</p></div>
+                <span class="status-pill">${escapeHtml(getJobTypeLabel(job.job_type))}</span>
             </div>
             <div class="summary-list">
-                <div class="summary-item"><span>Location</span><strong>${job.location}</strong></div>
-                <div class="summary-item"><span>Salary</span><strong>${job.salary_range}</strong></div>
+                <div class="summary-item"><span>Location</span><strong>${escapeHtml(job.location || "N/A")}</strong></div>
+                <div class="summary-item"><span>Salary</span><strong>${escapeHtml(job.salary_range || "Discuss in interview")}</strong></div>
             </div>
-            <a class="btn btn-primary full-width" href="job-detail.html?id=${job.id}">View Detail</a>
+            <a class="btn btn-primary full-width" href="job-detail.html?id=${encodeURIComponent(job.id)}">View Detail</a>
         </article>
     `;
-}
-
-function renderFeaturedJobs() {
-    const container = qs("#featured-jobs");
-    if (container) {
-        container.innerHTML = jobs.slice(0, 3).map(featuredCard).join("");
-        initRevealAnimations();
-    }
 }
 
 function jobListCard(job) {
+    const skills = Array.isArray(job.skills_required) ? job.skills_required.join(", ") : "";
     return `
         <article class="job-list-card">
             <div class="job-list-head">
-                <div><h3>${job.title}</h3><p>${job.company} · ${job.department}</p></div>
-                <span class="status-pill">${job.applicants} applicants</span>
+                <div><h3>${escapeHtml(job.title)}</h3><p>${escapeHtml(job.company_name || "Company")} - ${escapeHtml(job.department || "General")}</p></div>
+                <span class="status-pill">${escapeHtml(getJobTypeLabel(job.job_type))}</span>
             </div>
             <div class="summary-list">
-                <div class="summary-item"><span>Location</span><strong>${job.location}</strong></div>
-                <div class="summary-item"><span>Type</span><strong>${job.job_type.replace("_", " ")}</strong></div>
-                <div class="summary-item"><span>Salary</span><strong>${job.salary_range}</strong></div>
-                <div class="summary-item"><span>Skills</span><strong>${job.skills_required.join(", ")}</strong></div>
+                <div class="summary-item"><span>Location</span><strong>${escapeHtml(job.location || "N/A")}</strong></div>
+                <div class="summary-item"><span>Type</span><strong>${escapeHtml(getJobTypeLabel(job.job_type))}</strong></div>
+                <div class="summary-item"><span>Salary</span><strong>${escapeHtml(job.salary_range || "Discuss in interview")}</strong></div>
+                <div class="summary-item"><span>Skills</span><strong>${escapeHtml(skills || "Not specified")}</strong></div>
             </div>
             <div class="hero-actions">
-                <a class="btn btn-outline" href="job-detail.html?id=${job.id}">View Detail</a>
-                <a class="btn btn-primary" href="apply.html?id=${job.id}">Apply Now - Rs. 50 Refundable Fee</a>
+                <a class="btn btn-outline" href="job-detail.html?id=${encodeURIComponent(job.id)}">View Detail</a>
+                <a class="btn btn-primary" href="apply.html?id=${encodeURIComponent(job.id)}">Apply Now</a>
             </div>
         </article>
     `;
 }
 
-function renderJobsPage() {
+async function renderFeaturedJobs() {
+    const container = qs("#featured-jobs");
+    if (!container) return;
+
+    try {
+        const jobs = await getJobs(false);
+        if (!jobs.length) {
+            container.innerHTML = `<article class="surface"><p>No active jobs found right now.</p></article>`;
+            return;
+        }
+        container.innerHTML = jobs.slice(0, 3).map(featuredCard).join("");
+        initRevealAnimations();
+    } catch (error) {
+        container.innerHTML = `<article class="surface"><p>${escapeHtml(error.message)}</p></article>`;
+    }
+}
+
+async function renderJobsPage() {
     const container = qs("#jobs-list");
     if (!container) return;
+
     const search = qs("#job-search");
     const chips = qsa(".chip");
     let activeFilter = "all";
+    let allJobs = [];
 
     function draw() {
-        const query = (search?.value || "").toLowerCase();
-        const filtered = jobs.filter((job) => {
+        const query = String(search?.value || "").toLowerCase();
+        const filtered = allJobs.filter((job) => {
             const matchesFilter = activeFilter === "all" || job.job_type === activeFilter;
-            const text = `${job.title} ${job.location} ${job.company} ${job.skills_required.join(" ")}`.toLowerCase();
+            const text = `${job.title} ${job.location} ${job.company_name} ${(job.skills_required || []).join(" ")}`.toLowerCase();
             return matchesFilter && text.includes(query);
         });
-        container.innerHTML = filtered.map(jobListCard).join("");
+
+        if (!filtered.length) {
+            container.innerHTML = `<article class="surface"><p>No jobs matched your filters.</p></article>`;
+        } else {
+            container.innerHTML = filtered.map(jobListCard).join("");
+        }
         initRevealAnimations();
     }
 
@@ -346,359 +291,788 @@ function renderJobsPage() {
         chip.addEventListener("click", () => {
             chips.forEach((item) => item.classList.remove("active"));
             chip.classList.add("active");
-            activeFilter = chip.dataset.filter;
+            activeFilter = chip.dataset.filter || "all";
             draw();
         });
     });
     search?.addEventListener("input", draw);
-    draw();
+
+    try {
+        allJobs = await getJobs(false);
+        draw();
+    } catch (error) {
+        container.innerHTML = `<article class="surface"><p>${escapeHtml(error.message)}</p></article>`;
+    }
 }
 
-function renderJobDetail() {
+async function renderJobDetail() {
     const main = qs("#job-detail-main");
     const side = qs("#job-detail-side");
     if (!main || !side) return;
-    const job = getJob(params().get("id"));
 
-    main.innerHTML = `
-        <span class="eyebrow">Job Detail</span>
-        <h1>${job.title}</h1>
-        <p>${job.company} · ${job.department} · ${job.location}</p>
-        <div class="summary-list" style="margin-top:20px;">
-            <div class="summary-item"><span>Description</span><strong>${job.description}</strong></div>
-            <div class="summary-item"><span>Required Skills</span><strong>${job.skills_required.join(", ")}</strong></div>
-            <div class="summary-item"><span>Perks</span><strong>${job.perks}</strong></div>
-            <div class="summary-item"><span>Salary Range</span><strong>${job.salary_range}</strong></div>
-        </div>
-    `;
-    side.innerHTML = `
-        <span class="eyebrow">Quick Summary</span>
-        <div class="summary-list">
-            <div class="summary-item"><span>Job Type</span><strong>${job.job_type.replace("_", " ")}</strong></div>
-            <div class="summary-item"><span>Applicants</span><strong>${job.applicants}</strong></div>
-            <div class="summary-item"><span>Posted By</span><strong>HR Admin</strong></div>
-        </div>
-        <div class="hero-actions" style="margin-top:18px;">
-            <a class="btn btn-primary full-width" href="apply.html?id=${job.id}">Apply Now</a>
-            <a class="btn btn-outline full-width" href="jobs.html">Back to Jobs</a>
-        </div>
-    `;
+    try {
+        const jobId = params().get("id");
+        let job = null;
+
+        if (jobId) {
+            const detail = await apiRequest(`/api/jobs/${encodeURIComponent(jobId)}`, { auth: false });
+            job = detail.job;
+        } else {
+            const jobs = await getJobs(false);
+            job = jobs[0] || null;
+        }
+
+        if (!job) {
+            main.innerHTML = "<h2>Job not found</h2><p>Please return to jobs and pick another role.</p>";
+            side.innerHTML = `<a class="btn btn-outline full-width" href="jobs.html">Back to Jobs</a>`;
+            return;
+        }
+
+        const skills = Array.isArray(job.skills_required) ? job.skills_required.join(", ") : "Not specified";
+        main.innerHTML = `
+            <span class="eyebrow">Job Detail</span>
+            <h1>${escapeHtml(job.title)}</h1>
+            <p>${escapeHtml(job.company_name || "Company")} - ${escapeHtml(job.department || "General")} - ${escapeHtml(job.location || "N/A")}</p>
+            <div class="summary-list" style="margin-top:20px;">
+                <div class="summary-item"><span>Description</span><strong>${escapeHtml(job.description || "No description available.")}</strong></div>
+                <div class="summary-item"><span>Required Skills</span><strong>${escapeHtml(skills)}</strong></div>
+                <div class="summary-item"><span>Perks</span><strong>${escapeHtml(job.perks || "As per company policy")}</strong></div>
+                <div class="summary-item"><span>Salary Range</span><strong>${escapeHtml(job.salary_range || "Discuss in interview")}</strong></div>
+            </div>
+        `;
+        side.innerHTML = `
+            <span class="eyebrow">Quick Summary</span>
+            <div class="summary-list">
+                <div class="summary-item"><span>Job Type</span><strong>${escapeHtml(getJobTypeLabel(job.job_type))}</strong></div>
+                <div class="summary-item"><span>Status</span><strong>${job.is_active ? "Open" : "Closed"}</strong></div>
+                <div class="summary-item"><span>Posted By</span><strong>HR Admin</strong></div>
+            </div>
+            <div class="hero-actions" style="margin-top:18px;">
+                <a class="btn btn-primary full-width" href="apply.html?id=${encodeURIComponent(job.id)}">Apply Now</a>
+                <a class="btn btn-outline full-width" href="jobs.html">Back to Jobs</a>
+            </div>
+        `;
+    } catch (error) {
+        main.innerHTML = `<h2>Unable to load job</h2><p>${escapeHtml(error.message)}</p>`;
+        side.innerHTML = `<a class="btn btn-outline full-width" href="jobs.html">Back to Jobs</a>`;
+    }
 }
 
-function setupApplyPage() {
-    const subtitle = qs("#apply-job-subtitle");
-    if (!subtitle) return;
-    const job = getJob(params().get("id"));
-    const summary = qs("#apply-job-summary");
-    const preview = qs("#preview-card");
+function setupApplyStepper(form, preview) {
     const next = qs("#next-step");
     const prev = qs("#prev-step");
     const submit = qs("#submit-application");
-    const form = qs("#apply-form");
-    const resumeInput = qs("#resume");
     const steps = qsa(".form-step");
     const tabs = qsa(".stepper .step");
     let current = 0;
 
-    subtitle.textContent = `${job.title} · ${job.company}`;
-    summary.innerHTML = `
-        <div class="summary-item"><span>Role</span><strong>${job.title}</strong></div>
-        <div class="summary-item"><span>Company</span><strong>${job.company}</strong></div>
-        <div class="summary-item"><span>Location</span><strong>${job.location}</strong></div>
-        <div class="summary-item"><span>Status</span><strong>Open for direct application</strong></div>
-    `;
+    function renderPreview() {
+        preview.innerHTML = `
+            <span class="eyebrow">Preview</span>
+            <div class="summary-list">
+                <div class="summary-item"><span>Name</span><strong>${escapeHtml(qs("#full_name")?.value || "Not provided")}</strong></div>
+                <div class="summary-item"><span>Email</span><strong>${escapeHtml(qs("#email")?.value || "Not provided")}</strong></div>
+                <div class="summary-item"><span>Phone</span><strong>${escapeHtml(qs("#phone")?.value || "Not provided")}</strong></div>
+                <div class="summary-item"><span>Qualification</span><strong>${escapeHtml(qs("#qualification")?.value || "Not provided")}</strong></div>
+                <div class="summary-item"><span>Experience</span><strong>${escapeHtml(qs("#experience")?.value || "Not provided")}</strong></div>
+                <div class="summary-item"><span>Skills</span><strong>${escapeHtml(qs("#skills")?.value || "Not provided")}</strong></div>
+            </div>
+        `;
+    }
 
     function renderStep() {
         steps.forEach((step, index) => step.classList.toggle("active", index === current));
         tabs.forEach((tab, index) => tab.classList.toggle("active", index === current));
-        prev.style.visibility = current === 0 ? "hidden" : "visible";
-        next.hidden = current === steps.length - 1;
-        submit.hidden = current !== steps.length - 1;
-        submit.disabled = false;
-
-        if (current === steps.length - 1) {
-            preview.innerHTML = `
-                <span class="eyebrow">Preview</span>
-                <div class="summary-list">
-                    <div class="summary-item"><span>Name</span><strong>${qs("#full_name")?.value || "Not provided"}</strong></div>
-                    <div class="summary-item"><span>Email</span><strong>${qs("#email")?.value || "Not provided"}</strong></div>
-                    <div class="summary-item"><span>Phone</span><strong>${qs("#phone")?.value || "Not provided"}</strong></div>
-                    <div class="summary-item"><span>Qualification</span><strong>${qs("#qualification")?.value || "Not provided"}</strong></div>
-                    <div class="summary-item"><span>Experience</span><strong>${qs("#experience")?.value || "Not provided"}</strong></div>
-                    <div class="summary-item"><span>Skills</span><strong>${qs("#skills")?.value || "Not provided"}</strong></div>
-                </div>
-            `;
-        }
+        if (prev) prev.style.visibility = current === 0 ? "hidden" : "visible";
+        if (next) next.hidden = current === steps.length - 1;
+        if (submit) submit.hidden = current !== steps.length - 1;
+        if (current === steps.length - 1) renderPreview();
     }
 
-    next.addEventListener("click", () => { if (current < steps.length - 1) { current += 1; renderStep(); } });
-    prev.addEventListener("click", () => { if (current > 0) { current -= 1; renderStep(); } });
-    form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        if (!resumeInput?.files?.length) return toast("Please upload a resume before submitting.");
-
-        const client = getSupabaseClient();
-        if (!client) return toast("Supabase configuration missing on this page.");
-
-        const resumeFile = resumeInput.files[0];
-        if (resumeFile.size > MAX_RESUME_SIZE) return toast("Resume must be 5MB or smaller.");
-        if (resumeFile.type && !ALLOWED_RESUME_TYPES.includes(resumeFile.type)) {
-            return toast("Resume must be a PDF, DOC, or DOCX file.");
-        }
-
-        const applicantData = {
-            jobId: job.id,
-            title: job.title,
-            company: job.company,
-            fullName: qs("#full_name")?.value.trim() || "",
-            email: qs("#email")?.value.trim() || "",
-            phone: qs("#phone")?.value.trim() || "",
-            dob: qs("#dob")?.value || "",
-            gender: qs("#gender")?.value || "",
-            address: qs("#address")?.value.trim() || "",
-            qualification: qs("#qualification")?.value || "",
-            experience: qs("#experience")?.value || "",
-            currentTitle: qs("#current_title")?.value.trim() || "",
-            linkedin: qs("#linkedin")?.value.trim() || "",
-            skills: qs("#skills")?.value.trim() || "",
-            coverLetter: qs("#cover_letter")?.value.trim() || "",
-            resumeFileName: resumeFile.name
-        };
-
-        if (!applicantData.fullName || !applicantData.email || !applicantData.phone) {
-            return toast("Please fill name, email, and phone before submitting.");
-        }
-
-        submit.disabled = true;
-        submit.textContent = "Submitting...";
-
-        try {
-            const user = await getCurrentUser(client);
-            if (!user) {
-                throw new Error("Please login first, then submit the application.");
-            }
-
-            const resumeUpload = await uploadResumeToSupabase(client, job, applicantData, resumeFile);
-            const applicationRecord = await saveApplicationToSupabase(client, job, user, applicantData, resumeUpload);
-            await notifyHrByEmail(job, applicantData, resumeUpload, applicationRecord);
-
-            localStorage.setItem("latestApplication", JSON.stringify({
-                ...applicantData,
-                applicationId: applicationRecord.id,
-                resumePath: resumeUpload.path,
-                resumeUrl: resumeUpload.signedUrl
-            }));
-
-            toast("Application submitted and HR email sent.");
-            form.reset();
-            current = 0;
+    next?.addEventListener("click", () => {
+        if (current < steps.length - 1) {
+            current += 1;
             renderStep();
-        } catch (error) {
-            toast(error?.message || "Unable to submit application.");
-        } finally {
-            submit.disabled = false;
-            submit.textContent = "Submit Application";
         }
     });
+    prev?.addEventListener("click", () => {
+        if (current > 0) {
+            current -= 1;
+            renderStep();
+        }
+    });
+    form?.addEventListener("reset", () => {
+        current = 0;
+        renderStep();
+    });
+
     renderStep();
 }
 
-function trackerMarkup(app) {
-    const labels = ["Submitted", "Under Review", "Shortlisted / Rejected", "Closed"];
+async function setupApplyPage(currentUser) {
+    const subtitle = qs("#apply-job-subtitle");
+    const form = qs("#apply-form");
+    const summary = qs("#apply-job-summary");
+    const preview = qs("#preview-card");
+    if (!subtitle || !form || !summary || !preview) return;
+
+    try {
+        const jobs = await getJobs(false);
+        if (!jobs.length) {
+            subtitle.textContent = "No active jobs available right now.";
+            summary.innerHTML = `<div class="summary-item"><span>Status</span><strong>Closed</strong></div>`;
+            return;
+        }
+
+        const selectedJobId = params().get("id");
+        const selectedJob = jobs.find((job) => job.id === selectedJobId) || jobs[0];
+
+        subtitle.textContent = `${selectedJob.title} - ${selectedJob.company_name || "Company"}`;
+        summary.innerHTML = `
+            <div class="summary-item"><span>Role</span><strong>${escapeHtml(selectedJob.title)}</strong></div>
+            <div class="summary-item"><span>Company</span><strong>${escapeHtml(selectedJob.company_name || "Company")}</strong></div>
+            <div class="summary-item"><span>Location</span><strong>${escapeHtml(selectedJob.location || "N/A")}</strong></div>
+            <div class="summary-item"><span>Status</span><strong>Open for application</strong></div>
+        `;
+
+        if (currentUser) {
+            if (qs("#full_name")) qs("#full_name").value = currentUser.full_name || "";
+            if (qs("#email")) qs("#email").value = currentUser.email || "";
+            if (qs("#phone")) qs("#phone").value = currentUser.phone || "";
+            if (qs("#dob")) qs("#dob").value = currentUser.dob || "";
+            if (qs("#gender")) qs("#gender").value = currentUser.gender || "";
+            if (qs("#address")) qs("#address").value = currentUser.address || "";
+            if (qs("#qualification")) qs("#qualification").value = currentUser.qualification || "";
+            if (qs("#experience")) qs("#experience").value = currentUser.experience_years ?? "";
+            if (qs("#current_title")) qs("#current_title").value = currentUser.current_title || "";
+            if (qs("#linkedin")) qs("#linkedin").value = currentUser.linkedin_url || "";
+            if (qs("#skills")) {
+                qs("#skills").value = Array.isArray(currentUser.skills) ? currentUser.skills.join(", ") : "";
+            }
+            if (currentUser.resume_url && qs("#resume-note")) {
+                qs("#resume-note").innerHTML = `Resume already uploaded during registration. <a href="${escapeHtml(currentUser.resume_url)}" target="_blank" rel="noopener noreferrer">View current resume</a>.`;
+            }
+        }
+
+        setupApplyStepper(form, preview);
+        const submitButton = qs("#submit-application");
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const payload = {
+                job_id: selectedJob.id,
+                full_name: qs("#full_name")?.value.trim() || "",
+                phone: qs("#phone")?.value.trim() || "",
+                dob: qs("#dob")?.value || "",
+                gender: qs("#gender")?.value || "",
+                address: qs("#address")?.value.trim() || "",
+                qualification: qs("#qualification")?.value || "",
+                experience_years: qs("#experience")?.value || "",
+                current_title: qs("#current_title")?.value.trim() || "",
+                skills: qs("#skills")?.value.trim() || "",
+                linkedin_url: qs("#linkedin")?.value.trim() || "",
+                cover_letter: qs("#cover_letter")?.value.trim() || ""
+            };
+
+            const email = qs("#email")?.value.trim() || "";
+            if (!payload.full_name || !payload.phone || !email) {
+                toast("Please fill name, email, and phone before submitting.");
+                return;
+            }
+
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = "Submitting...";
+            }
+
+            try {
+                await apiRequest("/api/applications", {
+                    method: "POST",
+                    body: payload,
+                    auth: true
+                });
+                toast("Application submitted successfully.");
+                window.setTimeout(() => {
+                    window.location.href = "dashboard.html";
+                }, 700);
+            } catch (error) {
+                toast(error.message || "Unable to submit application.");
+            } finally {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = "Submit Application";
+                }
+            }
+        });
+    } catch (error) {
+        subtitle.textContent = "Unable to load selected job.";
+        summary.innerHTML = `<div class="summary-item"><span>Error</span><strong>${escapeHtml(error.message)}</strong></div>`;
+    }
+}
+
+function trackerMarkup(status) {
+    const labels = ["Submitted", "Under Review", "Shortlisted", "Closed"];
+    let progress = 1;
+    if (status === "under_review") progress = 2;
+    if (status === "shortlisted") progress = 3;
+    if (status === "hired" || status === "rejected") progress = 4;
+
     return `
         <div class="tracker">
             ${labels.map((label, index) => {
-                const activeIndex = app.steps.findIndex((step) => !step);
-                const cls = app.steps[index] ? "done" : index === activeIndex ? "active" : "";
-                return `<div class="tracker-step ${cls}">${label}</div>`;
+                const position = index + 1;
+                const className = position < progress ? "done" : position === progress ? "active" : "";
+                return `<div class="tracker-step ${className}">${label}</div>`;
             }).join("")}
         </div>
     `;
 }
 
-function renderDashboard() {
+async function renderCandidateDashboard(currentUser) {
     const container = qs("#dashboard-applications");
     if (!container) return;
-    container.innerHTML = applications.map((app) => {
-        const job = getJob(app.jobId);
-        return `
-            <article class="app-card">
-                <div class="card-head">
-                    <div><h3>${job.title}</h3><p>${job.company} · Candidate: ${app.candidate}</p></div>
-                    <span class="status-pill">${app.status.replace("_", " ")}</span>
-                </div>
-                ${trackerMarkup(app)}
-            </article>
-        `;
-    }).join("");
-    initRevealAnimations();
-}
 
-function renderHrDashboard() {
-    const jobsList = qs("#hr-jobs-list");
-    const applicantRows = qs("#hr-applicant-rows");
-    if (jobsList) {
-        jobsList.innerHTML = jobs.map((job) => `
-            <article class="job-list-card">
-                <div class="job-list-head">
-                    <div><h3>${job.title}</h3><p>${job.company} · ${job.location}</p></div>
-                    <span class="status-pill">${job.applicants} applicants</span>
-                </div>
-                <div class="hero-actions">
-                    <a class="btn btn-outline" href="hr-applicants.html?jobId=${job.id}">View Applicants</a>
-                    <button type="button" class="btn btn-primary" data-toast="Job edit flow is ready for backend wiring.">Edit Job</button>
-                </div>
-            </article>
-        `).join("");
-        initRevealAnimations();
+    if (qs("#candidate-greeting")) {
+        qs("#candidate-greeting").textContent = currentUser?.full_name
+            ? `Welcome, ${currentUser.full_name}`
+            : "Welcome";
     }
-    if (applicantRows) {
-        applicantRows.innerHTML = applications.map((app) => {
-            const job = getJob(app.jobId);
+
+    try {
+        const data = await apiRequest("/api/applications/my", { auth: true });
+        const applications = Array.isArray(data.applications) ? data.applications : [];
+
+        const total = applications.length;
+        const underReview = applications.filter((item) => item.status === "under_review").length;
+        const shortlisted = applications.filter((item) => item.status === "shortlisted").length;
+        const closed = applications.filter((item) => item.status === "hired" || item.status === "rejected").length;
+
+        if (qs("#stat-total")) qs("#stat-total").textContent = String(total);
+        if (qs("#stat-review")) qs("#stat-review").textContent = String(underReview);
+        if (qs("#stat-shortlisted")) qs("#stat-shortlisted").textContent = String(shortlisted);
+        if (qs("#stat-closed")) qs("#stat-closed").textContent = String(closed);
+
+        if (!applications.length) {
+            container.innerHTML = `
+                <article class="surface">
+                    <h3>No applications yet</h3>
+                    <p>Browse active jobs and submit your first application.</p>
+                    <a class="btn btn-primary" href="jobs.html">Browse Jobs</a>
+                </article>
+            `;
+            return;
+        }
+
+        container.innerHTML = applications.map((item) => {
+            const job = firstRelationObject(item.jobs);
             return `
-                <tr>
-                    <td>${app.candidate}</td>
-                    <td>${job.title}</td>
-                    <td>${app.status.replace("_", " ")}</td>
-                    <td><button type="button" class="btn btn-outline btn-sm" data-toast="Status update action will connect to backend later.">Update</button></td>
-                </tr>
+                <article class="app-card">
+                    <div class="card-head">
+                        <div>
+                            <h3>${escapeHtml(job?.title || "Job")}</h3>
+                            <p>${escapeHtml(job?.company_name || "Company")} - ${escapeHtml(job?.location || "N/A")}</p>
+                        </div>
+                        <span class="status-pill">${escapeHtml(formatStatus(item.status))}</span>
+                    </div>
+                    <div class="summary-list">
+                        <div class="summary-item"><span>Applied On</span><strong>${escapeHtml(formatDate(item.created_at))}</strong></div>
+                        <div class="summary-item"><span>Type</span><strong>${escapeHtml(getJobTypeLabel(job?.job_type))}</strong></div>
+                    </div>
+                    ${trackerMarkup(item.status)}
+                </article>
             `;
         }).join("");
+        initRevealAnimations();
+    } catch (error) {
+        container.innerHTML = `<article class="surface"><p>${escapeHtml(error.message)}</p></article>`;
     }
-    qsa("[data-hr-tab]").forEach((button) => {
+}
+
+function initHrTabs() {
+    const tabs = qsa("[data-hr-tab]");
+    if (!tabs.length) return;
+    tabs.forEach((button) => {
         button.addEventListener("click", () => {
-            qsa("[data-hr-tab]").forEach((tab) => tab.classList.remove("active"));
+            tabs.forEach((tab) => tab.classList.remove("active"));
             qsa(".tab-panel").forEach((panel) => panel.classList.remove("active"));
             button.classList.add("active");
             qs(`#hr-tab-${button.dataset.hrTab}`)?.classList.add("active");
         });
     });
-    qs("#create-job-form")?.addEventListener("submit", (event) => {
-        event.preventDefault();
-        toast("Frontend job creation form is ready.");
+}
+
+function createStatusSelect(applicationId, selectedStatus) {
+    return `
+        <select data-status-select="${escapeHtml(applicationId)}" class="status-select">
+            ${STATUS_OPTIONS.map((option) => `
+                <option value="${option}" ${option === selectedStatus ? "selected" : ""}>
+                    ${formatStatus(option)}
+                </option>
+            `).join("")}
+        </select>
+    `;
+}
+
+async function renderHrDashboard() {
+    const jobsList = qs("#hr-jobs-list");
+    const applicantRows = qs("#hr-applicant-rows");
+    const createJobForm = qs("#create-job-form");
+    if (!jobsList && !applicantRows && !createJobForm) return;
+
+    initHrTabs();
+
+    try {
+        const [jobsData, appsData] = await Promise.all([
+            apiRequest("/api/jobs?all=1", { auth: true }),
+            apiRequest("/api/admin/applications", { auth: true })
+        ]);
+
+        const jobs = Array.isArray(jobsData.jobs) ? jobsData.jobs : [];
+        const applications = Array.isArray(appsData.applications) ? appsData.applications : [];
+
+        const countByJobId = new Map();
+        applications.forEach((item) => {
+            countByJobId.set(item.job_id, (countByJobId.get(item.job_id) || 0) + 1);
+        });
+
+        if (jobsList) {
+            jobsList.innerHTML = jobs.map((job) => `
+                <article class="job-list-card">
+                    <div class="job-list-head">
+                        <div>
+                            <h3>${escapeHtml(job.title)}</h3>
+                            <p>${escapeHtml(job.company_name || "Company")} - ${escapeHtml(job.location || "N/A")}</p>
+                        </div>
+                        <span class="status-pill">${countByJobId.get(job.id) || 0} applicants</span>
+                    </div>
+                    <div class="summary-list">
+                        <div class="summary-item"><span>Department</span><strong>${escapeHtml(job.department || "General")}</strong></div>
+                        <div class="summary-item"><span>Type</span><strong>${escapeHtml(getJobTypeLabel(job.job_type))}</strong></div>
+                        <div class="summary-item"><span>Active</span><strong>${job.is_active ? "Yes" : "No"}</strong></div>
+                    </div>
+                    <div class="hero-actions">
+                        <a class="btn btn-outline" href="hr-applicants.html?jobId=${encodeURIComponent(job.id)}">View Applicants</a>
+                    </div>
+                </article>
+            `).join("");
+        }
+
+        if (applicantRows) {
+            applicantRows.innerHTML = applications.map((item) => {
+                const profile = firstRelationObject(item.profiles);
+                const job = firstRelationObject(item.jobs);
+                return `
+                    <tr>
+                        <td>${escapeHtml(profile?.full_name || "Candidate")}</td>
+                        <td>${escapeHtml(job?.title || "Job")}</td>
+                        <td>${escapeHtml(formatStatus(item.status))}</td>
+                        <td>
+                            ${profile?.resume_url
+                                ? `<a class="btn btn-outline btn-sm" href="${escapeHtml(profile.resume_url)}" target="_blank" rel="noopener noreferrer">Resume</a>`
+                                : "<span class=\"muted-text\">No resume</span>"
+                            }
+                        </td>
+                        <td class="admin-action-cell">
+                            ${createStatusSelect(item.id, item.status)}
+                            <button type="button" class="btn btn-primary btn-sm" data-update-status="${escapeHtml(item.id)}">Update</button>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+
+            if (!applicantRows.dataset.boundStatusHandler) {
+                applicantRows.addEventListener("click", async (event) => {
+                    const button = event.target.closest("[data-update-status]");
+                    if (!button) return;
+                    const applicationId = button.getAttribute("data-update-status");
+                    const select = qsa("[data-status-select]").find((item) => item.getAttribute("data-status-select") === applicationId);
+                    const selectedStatus = select?.value;
+                    if (!selectedStatus) return;
+
+                    const originalText = button.textContent;
+                    button.disabled = true;
+                    button.textContent = "Saving...";
+                    try {
+                        await apiRequest(`/api/admin/applications/${encodeURIComponent(applicationId)}/status`, {
+                            method: "PATCH",
+                            body: { status: selectedStatus },
+                            auth: true
+                        });
+                        toast("Application status updated.");
+                        await renderHrDashboard();
+                    } catch (error) {
+                        toast(error.message || "Unable to update status.");
+                    } finally {
+                        button.disabled = false;
+                        button.textContent = originalText;
+                    }
+                });
+                applicantRows.dataset.boundStatusHandler = "1";
+            }
+        }
+
+        if (createJobForm) {
+            if (!createJobForm.dataset.boundCreateJobHandler) {
+                createJobForm.addEventListener("submit", async (event) => {
+                    event.preventDefault();
+                    const submitButton = qs("#create-job-submit");
+                    const payload = {
+                        title: qs("#hr-job-title")?.value.trim() || "",
+                        company_name: qs("#hr-job-company")?.value.trim() || "",
+                        department: qs("#hr-job-department")?.value.trim() || "",
+                        location: qs("#hr-job-location")?.value.trim() || "",
+                        job_type: qs("#hr-job-type")?.value || "full_time",
+                        salary_range: qs("#hr-job-salary")?.value.trim() || "",
+                        skills_required: qs("#hr-job-skills")?.value.trim() || "",
+                        perks: qs("#hr-job-perks")?.value.trim() || "",
+                        description: qs("#hr-job-description")?.value.trim() || ""
+                    };
+
+                    if (!payload.title || !payload.location) {
+                        toast("Job title and location are required.");
+                        return;
+                    }
+
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.textContent = "Posting...";
+                    }
+
+                    try {
+                        await apiRequest("/api/jobs", {
+                            method: "POST",
+                            body: payload,
+                            auth: true
+                        });
+                        toast("Job posted successfully.");
+                        createJobForm.reset();
+                        jobCache.active = null;
+                        jobCache.all = null;
+                        await renderHrDashboard();
+                    } catch (error) {
+                        toast(error.message || "Unable to create job.");
+                    } finally {
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.textContent = "Post Job";
+                        }
+                    }
+                });
+                createJobForm.dataset.boundCreateJobHandler = "1";
+            }
+        }
+
+        initRevealAnimations();
+    } catch (error) {
+        if (jobsList) jobsList.innerHTML = `<article class="surface"><p>${escapeHtml(error.message)}</p></article>`;
+        if (applicantRows) applicantRows.innerHTML = `<tr><td colspan="5">${escapeHtml(error.message)}</td></tr>`;
+    }
+}
+
+async function renderHrApplicants() {
+    const rows = qs("#job-applicant-rows");
+    if (!rows) return;
+
+    try {
+        const data = await apiRequest("/api/admin/applications", { auth: true });
+        const applications = Array.isArray(data.applications) ? data.applications : [];
+        const filterJobId = params().get("jobId");
+        const filtered = filterJobId
+            ? applications.filter((item) => item.job_id === filterJobId)
+            : applications;
+
+        const heading = qs("#applicants-heading");
+        if (heading) {
+            if (filterJobId && filtered.length) {
+                const job = firstRelationObject(filtered[0].jobs);
+                heading.textContent = `Applicants for ${job?.title || "selected job"}`;
+            } else {
+                heading.textContent = "All applicants";
+            }
+        }
+
+        if (!filtered.length) {
+            rows.innerHTML = `<tr><td colspan="5">No applicants found.</td></tr>`;
+            return;
+        }
+
+        rows.innerHTML = filtered.map((item) => {
+            const profile = firstRelationObject(item.profiles);
+            const job = firstRelationObject(item.jobs);
+            return `
+                <tr>
+                    <td>${escapeHtml(profile?.full_name || "Candidate")}</td>
+                    <td>${escapeHtml(job?.title || "Job")}</td>
+                    <td>${escapeHtml(profile?.experience_years ?? "N/A")}</td>
+                    <td>
+                        ${profile?.resume_url
+                            ? `<a class="btn btn-outline btn-sm" href="${escapeHtml(profile.resume_url)}" target="_blank" rel="noopener noreferrer">View Resume</a>`
+                            : "No resume"
+                        }
+                    </td>
+                    <td>${escapeHtml(formatStatus(item.status))}</td>
+                </tr>
+            `;
+        }).join("");
+    } catch (error) {
+        rows.innerHTML = `<tr><td colspan="5">${escapeHtml(error.message)}</td></tr>`;
+    }
+}
+
+function initLogoutActions() {
+    qsa("[data-logout]").forEach((link) => {
+        link.addEventListener("click", (event) => {
+            event.preventDefault();
+            clearSession();
+            window.location.href = "login.html";
+        });
     });
 }
 
-function renderHrApplicants() {
-    const rows = qs("#job-applicant-rows");
-    if (!rows) return;
-    const job = getJob(params().get("jobId"));
-    qs("#applicants-heading").textContent = `Applicants for ${job.title}`;
-    rows.innerHTML = applications
-        .filter((app) => app.jobId === job.id)
-        .map((app) => `<tr><td>${app.candidate}</td><td>${app.experience}</td><td>${app.status.replace("_", " ")}</td></tr>`)
-        .join("");
+function setLoginRoleUI() {
+    const roleSelect = qs("#login-role");
+    const identifierLabel = qs("#login-identifier-label");
+    const identifierInput = qs("#login-identifier");
+    const registerHint = qs("#login-register-hint");
+    const title = qs("#login-title");
+    if (!roleSelect || !identifierLabel || !identifierInput) return;
+
+    const role = roleSelect.value;
+    if (role === "hr_admin") {
+        identifierLabel.textContent = "Admin ID";
+        identifierInput.type = "text";
+        identifierInput.placeholder = "Enter provided admin ID";
+        if (title) title.textContent = "Admin sign in";
+        if (registerHint) registerHint.hidden = true;
+    } else {
+        identifierLabel.textContent = "Email Address";
+        identifierInput.type = "email";
+        identifierInput.placeholder = "name@example.com";
+        if (title) title.textContent = "Candidate sign in";
+        if (registerHint) registerHint.hidden = false;
+    }
 }
 
 function initAuthForms() {
-    qs("#register-form")?.addEventListener("submit", (event) => {
-        event.preventDefault();
-        const status = qs("#register-status");
-        const client = getSupabaseClient();
-        if (!client) {
-            if (status) status.textContent = "Supabase URL and anon key are not added yet.";
-            return toast("Supabase configuration missing.");
-        }
+    const registerForm = qs("#register-form");
+    const loginForm = qs("#login-form");
 
-        const fullName = qs("#register-name")?.value.trim() || "";
-        const email = qs("#register-email")?.value.trim() || "";
-        const phone = qs("#register-phone")?.value.trim() || "";
-        const password = qs("#register-password")?.value || "";
+    if (registerForm) {
+        registerForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const status = qs("#register-status");
 
-        if (!fullName || !email || !phone || !password) {
-            if (status) status.textContent = "Please fill all required fields.";
-            return toast("Please fill all fields.");
-        }
+            const fullName = qs("#register-name")?.value.trim() || "";
+            const email = qs("#register-email")?.value.trim() || "";
+            const phone = qs("#register-phone")?.value.trim() || "";
+            const password = qs("#register-password")?.value || "";
+            const resumeFile = qs("#register-resume")?.files?.[0] || null;
 
-        if (status) status.textContent = "Creating your account...";
+            if (!fullName || !email || !phone || !password || !resumeFile) {
+                if (status) status.textContent = "Please complete all required fields including resume.";
+                toast("Please complete required registration details.");
+                return;
+            }
 
-        client.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    full_name: fullName,
-                    phone
+            const lowerName = resumeFile.name.toLowerCase();
+            const hasAllowedExtension = ALLOWED_RESUME_EXTENSIONS.some((ext) => lowerName.endsWith(ext));
+            if (!hasAllowedExtension) {
+                if (status) status.textContent = "Resume must be PDF, DOC, or DOCX.";
+                toast("Resume must be PDF, DOC, or DOCX.");
+                return;
+            }
+
+            if (resumeFile.size > MAX_RESUME_SIZE) {
+                if (status) status.textContent = "Resume must be 5MB or smaller.";
+                toast("Resume must be 5MB or smaller.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("full_name", fullName);
+            formData.append("email", email);
+            formData.append("phone", phone);
+            formData.append("password", password);
+            formData.append("dob", qs("#register-dob")?.value || "");
+            formData.append("gender", qs("#register-gender")?.value || "");
+            formData.append("address", qs("#register-address")?.value.trim() || "");
+            formData.append("qualification", qs("#register-qualification")?.value || "");
+            formData.append("experience_years", qs("#register-experience")?.value || "");
+            formData.append("current_title", qs("#register-current-title")?.value.trim() || "");
+            formData.append("skills", qs("#register-skills")?.value.trim() || "");
+            formData.append("linkedin_url", qs("#register-linkedin")?.value.trim() || "");
+            formData.append("resume", resumeFile);
+
+            const submitButton = qs("#register-submit");
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = "Registering...";
+            }
+            if (status) status.textContent = "Creating your account...";
+
+            try {
+                await apiRequest("/api/auth/register", {
+                    method: "POST",
+                    formData,
+                    auth: false
+                });
+                if (status) status.textContent = "Registration successful. Redirecting to login...";
+                toast("Registration completed successfully.");
+                window.setTimeout(() => {
+                    window.location.href = "login.html";
+                }, 800);
+            } catch (error) {
+                if (status) status.textContent = error.message || "Registration failed.";
+                toast(error.message || "Registration failed.");
+            } finally {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = "Register";
                 }
             }
-        }).then(({ data, error }) => {
-            if (error) {
-                if (status) status.textContent = error.message;
-                return toast(error.message);
+        });
+    }
+
+    if (loginForm) {
+        const roleSelect = qs("#login-role");
+        roleSelect?.addEventListener("change", setLoginRoleUI);
+        setLoginRoleUI();
+
+        loginForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const status = qs("#login-status");
+            const role = qs("#login-role")?.value || "candidate";
+            const identifier = qs("#login-identifier")?.value.trim() || "";
+            const password = qs("#login-password")?.value || "";
+
+            if (!identifier || !password) {
+                if (status) status.textContent = "Please enter login ID and password.";
+                toast("Please enter login ID and password.");
+                return;
             }
 
-            const needsConfirmation = !data.session;
-            if (status) {
-                status.textContent = needsConfirmation
-                    ? "Account created. Check your email for confirmation."
-                    : "Account created and signed in successfully.";
+            if (status) status.textContent = "Signing in...";
+            const submitButton = qs("#login-submit");
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = "Signing in...";
             }
-            toast(needsConfirmation ? "Registration successful. Check your email." : "Registration successful.");
 
-            if (!needsConfirmation) {
+            try {
+                const data = await apiRequest("/api/auth/login", {
+                    method: "POST",
+                    body: { role, identifier, password },
+                    auth: false
+                });
+
+                setSession(data.token, data.user);
+                if (status) status.textContent = "Login successful. Redirecting...";
+                toast("Login successful.");
                 window.setTimeout(() => {
-                    window.location.href = "dashboard.html";
+                    window.location.href = roleHomePage(data.user?.role || role);
                 }, 500);
+            } catch (error) {
+                if (status) status.textContent = error.message || "Login failed.";
+                toast(error.message || "Login failed.");
+            } finally {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = "Login";
+                }
             }
-        }).catch((error) => {
-            const message = error?.message || "Registration failed. Please check your internet connection and Supabase settings.";
-            if (status) status.textContent = message;
-            toast(message);
         });
-    });
-    qs("#login-form")?.addEventListener("submit", (event) => {
-        event.preventDefault();
-        const status = qs("#login-status");
-        const client = getSupabaseClient();
-        if (!client) {
-            if (status) status.textContent = "Supabase URL and anon key are not added yet.";
-            return toast("Supabase configuration missing.");
+    }
+}
+
+async function enforceRoleAccess() {
+    const page = getCurrentPageName();
+    const requiresCandidate = CANDIDATE_ONLY_PAGES.has(page);
+    const requiresAdmin = ADMIN_ONLY_PAGES.has(page);
+    const isAuthPage = AUTH_PAGES.has(page);
+
+    const needsCheck = requiresCandidate || requiresAdmin || isAuthPage;
+    if (!needsCheck) return null;
+
+    const session = getSession();
+    if (!session?.token) {
+        if (requiresCandidate || requiresAdmin) {
+            window.location.href = "login.html";
         }
+        return null;
+    }
 
-        const email = qs("#login-email")?.value.trim() || "";
-        const password = qs("#login-password")?.value || "";
-
-        if (!email || !password) {
-            if (status) status.textContent = "Please enter email and password.";
-            return toast("Please enter email and password.");
-        }
-
-        if (status) status.textContent = "Signing in...";
-
-        client.auth.signInWithPassword({ email, password }).then(({ error }) => {
-            if (error) {
-                if (status) status.textContent = error.message;
-                return toast(error.message);
+    try {
+        const user = await fetchCurrentUser();
+        if (!user) {
+            clearSession();
+            if (requiresCandidate || requiresAdmin) {
+                window.location.href = "login.html";
             }
+            return null;
+        }
 
-            if (status) status.textContent = "Login successful. Opening dashboard.";
-            toast("Login successful.");
-            window.setTimeout(() => {
-                window.location.href = "dashboard.html";
-            }, 500);
+        if (isAuthPage) {
+            window.location.href = roleHomePage(user.role);
+            return user;
+        }
+
+        if (requiresAdmin && user.role !== "hr_admin") {
+            window.location.href = roleHomePage(user.role);
+            return user;
+        }
+
+        if (requiresCandidate && user.role !== "candidate") {
+            window.location.href = roleHomePage(user.role);
+            return user;
+        }
+
+        return user;
+    } catch (error) {
+        clearSession();
+        if (requiresCandidate || requiresAdmin) {
+            window.location.href = "login.html";
+        }
+        return null;
+    }
+}
+
+function initDynamicRoleCards() {
+    qsa("[data-role-select]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const targetRole = button.getAttribute("data-role-select");
+            const roleSelect = qs("#login-role");
+            if (roleSelect && targetRole) {
+                roleSelect.value = targetRole;
+                setLoginRoleUI();
+            }
         });
     });
 }
 
-function initToastButtons() {
-    qsa("[data-toast]").forEach((button) => {
-        button.addEventListener("click", () => toast(button.dataset.toast));
-    });
-}
-
-function init() {
+async function init() {
     initCookieBanner();
     initMenu();
+    initLogoutActions();
+    initDynamicRoleCards();
     initAuthForms();
-    renderFeaturedJobs();
-    renderJobsPage();
-    renderJobDetail();
-    setupApplyPage();
-    renderDashboard();
-    renderHrDashboard();
-    renderHrApplicants();
-    initToastButtons();
+
+    const page = getCurrentPageName();
+    const currentUser = await enforceRoleAccess();
+    if ((CANDIDATE_ONLY_PAGES.has(page) || ADMIN_ONLY_PAGES.has(page)) && !currentUser) {
+        return;
+    }
+
+    await renderFeaturedJobs();
+    await renderJobsPage();
+    await renderJobDetail();
+    await setupApplyPage(currentUser);
+    await renderCandidateDashboard(currentUser);
+    await renderHrDashboard();
+    await renderHrApplicants();
     initRevealAnimations();
 }
 
-init();
+init().catch((error) => {
+    console.error(error);
+    toast("Something went wrong while loading this page.");
+});

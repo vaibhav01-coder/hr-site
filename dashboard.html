@@ -16,7 +16,7 @@
             <nav class="site-nav inline-nav">
                 <a href="jobs.html">Jobs</a>
                 <a href="apply.html">Apply</a>
-                <a href="login.html">Logout</a>
+                <a href="#" data-logout>Logout</a>
             </nav>
         </div>
     </header>
@@ -24,19 +24,34 @@
         <div class="container">
             <div class="page-head">
                 <span class="eyebrow">Candidate Dashboard</span>
-                <h1>Status tracker</h1>
-                <p>Preview of the documented application tracking interface.</p>
+                <h1 id="candidate-greeting">Status tracker</h1>
+                <p>Candidate-only workspace for tracking applications and progressing through interviews.</p>
+            </div>
+            <div class="grid role-cards">
+                <article class="surface role-card">
+                    <h3>Track Applications</h3>
+                    <p>See under review, shortlisted, hired, and refund progress in one place.</p>
+                </article>
+                <article class="surface role-card">
+                    <h3>Manage Profile</h3>
+                    <p>Use your registered details and keep contact info updated for HR follow-ups.</p>
+                </article>
+                <article class="surface role-card">
+                    <h3>Apply Faster</h3>
+                    <p>Jump to live jobs and submit your next application without re-entering everything.</p>
+                </article>
             </div>
             <div class="grid stats-grid">
-                <div class="stat-box"><strong>4</strong><span>Total Applications</span></div>
-                <div class="stat-box"><strong>2</strong><span>Under Review</span></div>
-                <div class="stat-box"><strong>1</strong><span>Shortlisted</span></div>
-                <div class="stat-box"><strong>1</strong><span>Closed</span></div>
+                <div class="stat-box"><strong id="stat-total">0</strong><span>Total Applications</span></div>
+                <div class="stat-box"><strong id="stat-review">0</strong><span>Under Review</span></div>
+                <div class="stat-box"><strong id="stat-shortlisted">0</strong><span>Shortlisted</span></div>
+                <div class="stat-box"><strong id="stat-closed">0</strong><span>Closed</span></div>
             </div>
             <div id="dashboard-applications" class="list-stack"></div>
         </div>
     </main>
     <div id="toast-root" class="toast-root"></div>
+    <script src="api-config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

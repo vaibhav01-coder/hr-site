@@ -15,7 +15,7 @@
             <a class="brand" href="index.html"><span class="brand-mark">HR</span><span class="brand-text">Hiring Portal</span></a>
             <nav class="site-nav inline-nav">
                 <a href="jobs.html">Public Jobs</a>
-                <a href="login.html">Logout</a>
+                <a href="#" data-logout>Logout</a>
             </nav>
         </div>
     </header>
@@ -24,7 +24,21 @@
             <div class="page-head">
                 <span class="eyebrow">HR Admin Panel</span>
                 <h1>Manage jobs and applicants</h1>
-                <p>Frontend shell for /hr/dashboard and status workflows.</p>
+                <p>Admin-only control center for posting jobs, reviewing applications, and running status operations.</p>
+            </div>
+            <div class="grid role-cards admin-role-cards">
+                <article class="surface role-card">
+                    <h3>Job Management</h3>
+                    <p>Create, update, and maintain active job listings with department and role details.</p>
+                </article>
+                <article class="surface role-card">
+                    <h3>Applicant Review</h3>
+                    <p>Move candidates through under-review, shortlisted, hired, or rejected stages.</p>
+                </article>
+                <article class="surface role-card">
+                    <h3>Refund Control</h3>
+                    <p>Track rejected applications and trigger fee refund workflows accurately.</p>
+                </article>
             </div>
             <div class="tabs">
                 <button type="button" class="tab active" data-hr-tab="jobs">Jobs</button>
@@ -42,7 +56,8 @@
                                 <th>Candidate</th>
                                 <th>Job</th>
                                 <th>Status</th>
-                                <th>Action</th>
+                                <th>Resume</th>
+                                <th>Status Action</th>
                             </tr>
                         </thead>
                         <tbody id="hr-applicant-rows"></tbody>
@@ -52,18 +67,30 @@
             <section class="tab-panel" id="hr-tab-create">
                 <div class="surface">
                     <form id="create-job-form" class="field-grid">
-                        <label class="field"><span>Job Title</span><input type="text" required></label>
-                        <label class="field"><span>Department</span><input type="text" required></label>
-                        <label class="field"><span>Location</span><input type="text" required></label>
-                        <label class="field"><span>Job Type</span><select><option>full_time</option><option>part_time</option><option>contract</option></select></label>
-                        <label class="field full"><span>Description</span><textarea rows="4"></textarea></label>
-                        <button type="submit" class="btn btn-primary">Post Job</button>
+                        <label class="field"><span>Job Title</span><input id="hr-job-title" type="text" required></label>
+                        <label class="field"><span>Company</span><input id="hr-job-company" type="text" placeholder="Raicam Industries"></label>
+                        <label class="field"><span>Department</span><input id="hr-job-department" type="text"></label>
+                        <label class="field"><span>Location</span><input id="hr-job-location" type="text" required></label>
+                        <label class="field">
+                            <span>Job Type</span>
+                            <select id="hr-job-type">
+                                <option value="full_time">full_time</option>
+                                <option value="part_time">part_time</option>
+                                <option value="contract">contract</option>
+                            </select>
+                        </label>
+                        <label class="field"><span>Salary Range</span><input id="hr-job-salary" type="text" placeholder="Rs. 20,000 - Rs. 30,000"></label>
+                        <label class="field full"><span>Skills Required (comma separated)</span><input id="hr-job-skills" type="text" placeholder="Quality Check, CNC, Dispatch"></label>
+                        <label class="field full"><span>Perks</span><input id="hr-job-perks" type="text" placeholder="Canteen, transport"></label>
+                        <label class="field full"><span>Description</span><textarea id="hr-job-description" rows="4"></textarea></label>
+                        <button id="create-job-submit" type="submit" class="btn btn-primary">Post Job</button>
                     </form>
                 </div>
             </section>
         </div>
     </main>
     <div id="toast-root" class="toast-root"></div>
+    <script src="api-config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
