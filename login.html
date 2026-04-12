@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | HR Hiring Portal</title>
+    <title>Sign in | HR Hiring Portal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -11,35 +11,55 @@
 </head>
 <body data-page="login">
     <main class="auth-shell">
-        <section class="surface auth-card">
-            <span class="eyebrow">Login</span>
-            <h1 id="login-title">Candidate sign in</h1>
-            <p>First choose your role, then sign in.</p>
-            <div class="role-choice-grid">
-                <button type="button" class="role-choice-btn" data-role-select="candidate">I am User</button>
-                <button type="button" class="role-choice-btn" data-role-select="hr_admin">I am Admin</button>
+        <section class="surface auth-card auth-flow-card">
+            <div id="auth-step-role" class="auth-step">
+                <span class="eyebrow">Welcome</span>
+                <h1>How do you want to continue?</h1>
+                <p class="auth-lead">Choose <strong>Candidate</strong> to view jobs and apply, or <strong>Administrator</strong> for the HR control panel. Candidates who are new must <a href="register.html">register</a> first (full details + resume).</p>
+                <div class="role-split">
+                    <button type="button" class="role-tile" id="btn-choose-candidate" aria-label="Continue as candidate">
+                        <strong>Candidate</strong>
+                        <span>Browse jobs, apply, track applications</span>
+                    </button>
+                    <button type="button" class="role-tile role-tile-admin" id="btn-choose-admin" aria-label="Continue as administrator">
+                        <strong>Administrator</strong>
+                        <span>Post jobs, review requests &amp; resumes</span>
+                    </button>
+                </div>
+                <p class="muted-line auth-foot"><a href="index.html">← Back to home</a></p>
             </div>
-            <form id="login-form" class="auth-form">
-                <label class="field">
-                    <span>Login As</span>
-                    <select id="login-role" required>
-                        <option value="candidate">User (Candidate)</option>
-                        <option value="hr_admin">Admin</option>
-                    </select>
-                </label>
-                <label class="field"><span id="login-identifier-label">Email Address</span><input id="login-identifier" type="email" required></label>
-                <label class="field"><span>Password</span><input id="login-password" type="password" required></label>
-                <button id="login-submit" type="submit" class="btn btn-primary full-width">Login</button>
-            </form>
-            <p class="muted-line" id="login-status">Use your registered credentials. Admin can use direct Admin ID and password.</p>
-            <div class="auth-links">
-                <a id="login-register-hint" href="register.html">New user? Complete Registration</a>
-                <a href="jobs.html">Browse Jobs</a>
+
+            <div id="auth-step-candidate" class="auth-step is-hidden">
+                <button type="button" class="text-back" id="btn-back-candidate">← Change role</button>
+                <h2>Candidate sign in</h2>
+                <p class="auth-lead">Sign in with the email and password you used when you registered.</p>
+                <form id="candidate-login-form" class="auth-form">
+                    <label class="field"><span>Email</span><input id="candidate-email" type="email" name="email" autocomplete="email" required placeholder="you@example.com"></label>
+                    <label class="field"><span>Password</span><input id="candidate-password" type="password" name="password" autocomplete="current-password" required></label>
+                    <button type="submit" class="btn btn-primary full-width" id="candidate-login-submit">Sign in</button>
+                </form>
+                <p class="muted-line login-status-line" id="login-status-candidate"></p>
+                <div class="auth-links">
+                    <a href="register.html">New here? Register with full details &amp; resume</a>
+                    <a href="jobs.html">Browse public jobs</a>
+                </div>
+            </div>
+
+            <div id="auth-step-admin" class="auth-step is-hidden">
+                <button type="button" class="text-back" id="btn-back-admin">← Change role</button>
+                <h2>Administrator sign in</h2>
+                <p class="auth-lead">Enter the <strong>Admin ID</strong> and <strong>password</strong> provided to you by HR. This panel is not for candidates.</p>
+                <form id="admin-login-form" class="auth-form">
+                    <label class="field"><span>Admin ID</span><input id="admin-id" type="text" name="adminId" autocomplete="username" required placeholder="Provided admin login ID"></label>
+                    <label class="field"><span>Password</span><input id="admin-password" type="password" name="password" autocomplete="current-password" required></label>
+                    <button type="submit" class="btn btn-primary full-width" id="admin-login-submit">Sign in to admin panel</button>
+                </form>
+                <p class="muted-line login-status-line" id="login-status-admin"></p>
             </div>
         </section>
     </main>
     <div id="toast-root" class="toast-root"></div>
-    <script src="api-config.js?v=20260410b"></script>
-    <script src="app.js?v=20260410b"></script>
+    <script src="api-config.js?v=20260412a"></script>
+    <script src="app.js?v=20260412a"></script>
 </body>
 </html>

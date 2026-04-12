@@ -3,52 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Dashboard | HR Hiring Portal</title>
+    <title>Admin Panel | HR Hiring Portal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body data-page="hr-dashboard">
+<body data-page="hr-dashboard" class="admin-shell">
     <header class="site-header slim">
         <div class="container nav-wrap">
             <a class="brand" href="index.html"><span class="brand-mark">HR</span><span class="brand-text">Hiring Portal</span></a>
             <nav class="site-nav inline-nav">
-                <a href="jobs.html">Public Jobs</a>
-                <a href="#" data-logout>Logout</a>
+                <a href="jobs.html">Public jobs</a>
+                <a href="hr-applicants.html">All applicants</a>
+                <a href="#" data-logout>Sign out</a>
             </nav>
         </div>
     </header>
     <main class="section">
         <div class="container">
+            <div class="admin-welcome">
+                <div>
+                    <p class="eyebrow" style="margin-bottom:6px;">Administrator</p>
+                    <h2 id="admin-welcome-heading">HR control center</h2>
+                    <p id="admin-welcome-line">Manage job listings, incoming applications, and candidate status.</p>
+                </div>
+            </div>
+
+            <div class="admin-stats" aria-live="polite">
+                <div class="admin-stat">
+                    <strong id="admin-stat-jobs">—</strong>
+                    <span>Job listings</span>
+                </div>
+                <div class="admin-stat">
+                    <strong id="admin-stat-apps">—</strong>
+                    <span>Total applications</span>
+                </div>
+                <div class="admin-stat">
+                    <strong id="admin-stat-pending">—</strong>
+                    <span>Under review</span>
+                </div>
+            </div>
+
             <div class="page-head">
-                <span class="eyebrow">HR Admin Panel</span>
-                <h1>Manage jobs and applicants</h1>
-                <p>Admin-only control center for posting jobs, reviewing applications, and running status operations.</p>
+                <span class="eyebrow">Operations</span>
+                <h1>Jobs &amp; applicant requests</h1>
+                <p>Post roles, review candidates who applied, open resumes, and update application status.</p>
             </div>
-            <div class="grid role-cards admin-role-cards">
-                <article class="surface role-card">
-                    <h3>Job Management</h3>
-                    <p>Create, update, and maintain active job listings with department and role details.</p>
-                </article>
-                <article class="surface role-card">
-                    <h3>Applicant Review</h3>
-                    <p>Move candidates through under-review, shortlisted, hired, or rejected stages.</p>
-                </article>
-                <article class="surface role-card">
-                    <h3>Refund Control</h3>
-                    <p>Track rejected applications and trigger fee refund workflows accurately.</p>
-                </article>
+
+            <div class="tabs" role="tablist">
+                <button type="button" class="tab active" data-hr-tab="jobs" role="tab">Jobs</button>
+                <button type="button" class="tab" data-hr-tab="applicants" role="tab">Applicants &amp; resumes</button>
+                <button type="button" class="tab" data-hr-tab="create" role="tab">Create job</button>
             </div>
-            <div class="tabs">
-                <button type="button" class="tab active" data-hr-tab="jobs">Jobs</button>
-                <button type="button" class="tab" data-hr-tab="applicants">Applicants</button>
-                <button type="button" class="tab" data-hr-tab="create">Create Job</button>
-            </div>
-            <section class="tab-panel active" id="hr-tab-jobs">
+            <section class="tab-panel active" id="hr-tab-jobs" role="tabpanel">
                 <div id="hr-jobs-list" class="list-stack"></div>
             </section>
-            <section class="tab-panel" id="hr-tab-applicants">
+            <section class="tab-panel" id="hr-tab-applicants" role="tabpanel">
                 <div class="surface table-wrap">
                     <table class="table">
                         <thead>
@@ -57,40 +68,41 @@
                                 <th>Job</th>
                                 <th>Status</th>
                                 <th>Resume</th>
-                                <th>Status Action</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="hr-applicant-rows"></tbody>
                     </table>
                 </div>
             </section>
-            <section class="tab-panel" id="hr-tab-create">
+            <section class="tab-panel" id="hr-tab-create" role="tabpanel">
                 <div class="surface">
+                    <h3 class="field" style="margin-bottom:16px;font-size:18px;">New job listing</h3>
                     <form id="create-job-form" class="field-grid">
-                        <label class="field"><span>Job Title</span><input id="hr-job-title" type="text" required></label>
+                        <label class="field"><span>Job title</span><input id="hr-job-title" type="text" required placeholder="e.g. Production Operator"></label>
                         <label class="field"><span>Company</span><input id="hr-job-company" type="text" placeholder="Raicam Industries"></label>
-                        <label class="field"><span>Department</span><input id="hr-job-department" type="text"></label>
-                        <label class="field"><span>Location</span><input id="hr-job-location" type="text" required></label>
+                        <label class="field"><span>Department</span><input id="hr-job-department" type="text" placeholder="Production"></label>
+                        <label class="field"><span>Location</span><input id="hr-job-location" type="text" required placeholder="Sanand, Gujarat"></label>
                         <label class="field">
-                            <span>Job Type</span>
+                            <span>Job type</span>
                             <select id="hr-job-type">
-                                <option value="full_time">full_time</option>
-                                <option value="part_time">part_time</option>
-                                <option value="contract">contract</option>
+                                <option value="full_time">Full time</option>
+                                <option value="part_time">Part time</option>
+                                <option value="contract">Contract</option>
                             </select>
                         </label>
-                        <label class="field"><span>Salary Range</span><input id="hr-job-salary" type="text" placeholder="Rs. 20,000 - Rs. 30,000"></label>
-                        <label class="field full"><span>Skills Required (comma separated)</span><input id="hr-job-skills" type="text" placeholder="Quality Check, CNC, Dispatch"></label>
+                        <label class="field"><span>Salary range</span><input id="hr-job-salary" type="text" placeholder="Rs. 20,000 - Rs. 30,000"></label>
+                        <label class="field full"><span>Skills (comma separated)</span><input id="hr-job-skills" type="text" placeholder="Quality check, assembly"></label>
                         <label class="field full"><span>Perks</span><input id="hr-job-perks" type="text" placeholder="Canteen, transport"></label>
-                        <label class="field full"><span>Description</span><textarea id="hr-job-description" rows="4"></textarea></label>
-                        <button id="create-job-submit" type="submit" class="btn btn-primary">Post Job</button>
+                        <label class="field full"><span>Description</span><textarea id="hr-job-description" rows="5" placeholder="Role summary and requirements"></textarea></label>
+                        <button id="create-job-submit" type="submit" class="btn btn-primary">Publish job</button>
                     </form>
                 </div>
             </section>
         </div>
     </main>
     <div id="toast-root" class="toast-root"></div>
-    <script src="api-config.js?v=20260410b"></script>
-    <script src="app.js?v=20260410b"></script>
+    <script src="api-config.js?v=20260412a"></script>
+    <script src="app.js?v=20260412a"></script>
 </body>
 </html>

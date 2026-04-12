@@ -109,14 +109,47 @@ function getAuthToken() {
     return getSession()?.token || "";
 }
 
+function formatToastMessage(input) {
+    if (input == null) return "Something went wrong.";
+    if (typeof input === "string") return input;
+    if (input instanceof Error) return input.message || "Something went wrong.";
+    if (typeof input === "object") {
+        if (typeof input.message === "string") return input.message;
+        try {
+            return JSON.stringify(input);
+        } catch {
+            return "Something went wrong.";
+        }
+    }
+    return String(input);
+}
+
 function toast(message) {
     const root = qs("#toast-root");
     if (!root) return;
     const item = document.createElement("div");
     item.className = "toast";
-    item.textContent = message;
+    item.textContent = formatToastMessage(message);
     root.appendChild(item);
-    window.setTimeout(() => item.remove(), 2800);
+    window.setTimeout(() => item.remove(), 3200);
+}
+
+function apiErrorMessage(payload, httpStatus) {
+    if (!payload || typeof payload !== "object") {
+        return `Request failed (HTTP ${httpStatus}).`;
+    }
+    if (typeof payload.message === "string" && payload.message.trim()) return payload.message.trim();
+    if (typeof payload.detail === "string" && payload.detail.trim()) return payload.detail.trim();
+    const err = payload.error;
+    if (typeof err === "string" && err.trim()) return err.trim();
+    if (err && typeof err === "object" && typeof err.message === "string" && err.message.trim()) {
+        return err.message.trim();
+    }
+    try {
+        return JSON.stringify(payload);
+    } catch {
+        return `Request failed (HTTP ${httpStatus}).`;
+    }
 }
 
 function parseApiPayload(text, response) {
@@ -200,13 +233,7 @@ async function apiRequest(path, options = {}) {
 
     if (!response.ok) {
         if (response.status === 401) clearSession();
-        const msg =
-            payload.message ||
-            payload.detail ||
-            payload.error ||
-            (typeof payload === "string" ? payload : null) ||
-            `Request failed (HTTP ${response.status}).`;
-        throw new Error(msg);
+        throw new Error(apiErrorMessage(payload, response.status));
     }
 
     return payload;
@@ -718,6 +745,28 @@ async function renderHrDashboard() {
         const jobs = Array.isArray(jobsData.jobs) ? jobsData.jobs : [];
         const applications = Array.isArray(appsData.applications) ? appsData.applications : [];
 
+        const session = getSession();
+        const u = session?.user;
+        const welcomeHeading = qs("#admin-welcome-heading");
+        const welcomeLine = qs("#admin-welcome-line");
+        if (welcomeHeading && u) {
+            welcomeHeading.textContent = `Hello, ${u.full_name || u.email || "Admin"}`;
+        }
+        if (welcomeLine && u) {
+            welcomeLine.textContent =
+                u.role === "hr_admin"
+                    ? "Post jobs, review applications, and open candidate resumes from one place."
+                    : "";
+        }
+
+        const pendingReview = applications.filter((a) => a.status === "under_review").length;
+        const statJobs = qs("#admin-stat-jobs");
+        const statApps = qs("#admin-stat-apps");
+        const statPending = qs("#admin-stat-pending");
+        if (statJobs) statJobs.textContent = String(jobs.length);
+        if (statApps) statApps.textContent = String(applications.length);
+        if (statPending) statPending.textContent = String(pendingReview);
+
         const countByJobId = new Map();
         applications.forEach((item) => {
             countByJobId.set(item.job_id, (countByJobId.get(item.job_id) || 0) + 1);
@@ -789,7 +838,7 @@ async function renderHrDashboard() {
                         toast("Application status updated.");
                         await renderHrDashboard();
                     } catch (error) {
-                        toast(error.message || "Unable to update status.");
+                        toast(getErrorMessage(error));
                     } finally {
                         button.disabled = false;
                         button.textContent = originalText;
@@ -838,7 +887,7 @@ async function renderHrDashboard() {
                         jobCache.all = null;
                         await renderHrDashboard();
                     } catch (error) {
-                        toast(error.message || "Unable to create job.");
+                        toast(getErrorMessage(error));
                     } finally {
                         if (submitButton) {
                             submitButton.disabled = false;
@@ -852,8 +901,10 @@ async function renderHrDashboard() {
 
         initRevealAnimations();
     } catch (error) {
-        if (jobsList) jobsList.innerHTML = `<article class="surface"><p>${escapeHtml(error.message)}</p></article>`;
-        if (applicantRows) applicantRows.innerHTML = `<tr><td colspan="5">${escapeHtml(error.message)}</td></tr>`;
+        const msg = getErrorMessage(error);
+        if (jobsList) jobsList.innerHTML = `<article class="surface"><p>${escapeHtml(msg)}</p></article>`;
+        if (applicantRows) applicantRows.innerHTML = `<tr><td colspan="5">${escapeHtml(msg)}</td></tr>`;
+        toast(msg);
     }
 }
 
@@ -917,33 +968,143 @@ function initLogoutActions() {
     });
 }
 
-function setLoginRoleUI() {
-    const roleSelect = qs("#login-role");
-    const identifierLabel = qs("#login-identifier-label");
-    const identifierInput = qs("#login-identifier");
-    const registerHint = qs("#login-register-hint");
-    const title = qs("#login-title");
-    if (!roleSelect || !identifierLabel || !identifierInput) return;
+function getErrorMessage(error) {
+    if (error instanceof Error) return error.message || "Something went wrong.";
+    return formatToastMessage(error);
+}
 
-    const role = roleSelect.value;
-    if (role === "hr_admin") {
-        identifierLabel.textContent = "Admin ID";
-        identifierInput.type = "text";
-        identifierInput.placeholder = "Enter provided admin ID";
-        if (title) title.textContent = "Admin sign in";
-        if (registerHint) registerHint.hidden = true;
-    } else {
-        identifierLabel.textContent = "Email Address";
-        identifierInput.type = "email";
-        identifierInput.placeholder = "name@example.com";
-        if (title) title.textContent = "Candidate sign in";
-        if (registerHint) registerHint.hidden = false;
-    }
+function showLoginStep(step) {
+    const roleEl = qs("#auth-step-role");
+    const candEl = qs("#auth-step-candidate");
+    const adminEl = qs("#auth-step-admin");
+    if (!roleEl || !candEl || !adminEl) return;
+    roleEl.classList.toggle("is-hidden", step !== "role");
+    candEl.classList.toggle("is-hidden", step !== "candidate");
+    adminEl.classList.toggle("is-hidden", step !== "admin");
+}
+
+function initLoginWizard() {
+    const roleEl = qs("#auth-step-role");
+    if (!roleEl) return;
+
+    qs("#btn-choose-candidate")?.addEventListener("click", () => showLoginStep("candidate"));
+    qs("#btn-choose-admin")?.addEventListener("click", () => showLoginStep("admin"));
+    qs("#btn-back-candidate")?.addEventListener("click", () => showLoginStep("role"));
+    qs("#btn-back-admin")?.addEventListener("click", () => showLoginStep("role"));
+
+    const hash = (window.location.hash || "").toLowerCase();
+    if (hash === "#candidate") showLoginStep("candidate");
+    else if (hash === "#admin") showLoginStep("admin");
+
+    const candidateForm = qs("#candidate-login-form");
+    candidateForm?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const status = qs("#login-status-candidate");
+        const identifier = qs("#candidate-email")?.value.trim() || "";
+        const password = qs("#candidate-password")?.value || "";
+        if (!identifier || !password) {
+            if (status) status.textContent = "Please enter email and password.";
+            toast("Please enter email and password.");
+            return;
+        }
+        const backendReady = await checkApiHealth();
+        if (!backendReady) {
+            const message = getBackendConnectionMessage();
+            if (status) status.textContent = message;
+            toast(message);
+            return;
+        }
+        if (status) status.textContent = "Signing in…";
+        const submitButton = qs("#candidate-login-submit");
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = "Signing in…";
+        }
+        try {
+            const data = await apiRequest("/api/auth/login", {
+                method: "POST",
+                body: { role: "candidate", identifier, password },
+                auth: false
+            });
+            if (!data.token || !data.user) {
+                throw new Error(
+                    "Login response was incomplete. Check that /api/health works on this server."
+                );
+            }
+            setSession(data.token, data.user);
+            if (status) status.textContent = "Success. Redirecting…";
+            toast("Signed in successfully.");
+            window.setTimeout(() => {
+                window.location.href = roleHomePage(data.user?.role || "candidate");
+            }, 400);
+        } catch (error) {
+            const msg = getErrorMessage(error);
+            if (status) status.textContent = msg;
+            toast(msg);
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = "Sign in";
+            }
+        }
+    });
+
+    const adminForm = qs("#admin-login-form");
+    adminForm?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const status = qs("#login-status-admin");
+        const identifier = qs("#admin-id")?.value.trim() || "";
+        const password = qs("#admin-password")?.value || "";
+        if (!identifier || !password) {
+            if (status) status.textContent = "Please enter admin ID and password.";
+            toast("Please enter admin ID and password.");
+            return;
+        }
+        const backendReady = await checkApiHealth();
+        if (!backendReady) {
+            const message = getBackendConnectionMessage();
+            if (status) status.textContent = message;
+            toast(message);
+            return;
+        }
+        if (status) status.textContent = "Signing in…";
+        const submitButton = qs("#admin-login-submit");
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = "Signing in…";
+        }
+        try {
+            const data = await apiRequest("/api/auth/login", {
+                method: "POST",
+                body: { role: "hr_admin", identifier, password },
+                auth: false
+            });
+            if (!data.token || !data.user) {
+                throw new Error(
+                    "Login response was incomplete. Check that /api/health works on this server."
+                );
+            }
+            setSession(data.token, data.user);
+            if (status) status.textContent = "Success. Opening admin panel…";
+            toast("Welcome, administrator.");
+            window.setTimeout(() => {
+                window.location.href = roleHomePage(data.user?.role || "hr_admin");
+            }, 400);
+        } catch (error) {
+            const msg = getErrorMessage(error);
+            if (status) status.textContent = msg;
+            toast(msg);
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = "Sign in to admin panel";
+            }
+        }
+    });
 }
 
 function initAuthForms() {
     const registerForm = qs("#register-form");
-    const loginForm = qs("#login-form");
 
     if (registerForm) {
         registerForm.addEventListener("submit", async (event) => {
@@ -1018,8 +1179,9 @@ function initAuthForms() {
                     window.location.href = "login.html";
                 }, 800);
             } catch (error) {
-                if (status) status.textContent = error.message || "Registration failed.";
-                toast(error.message || "Registration failed.");
+                const msg = getErrorMessage(error);
+                if (status) status.textContent = msg;
+                toast(msg);
             } finally {
                 if (submitButton) {
                     submitButton.disabled = false;
@@ -1029,69 +1191,7 @@ function initAuthForms() {
         });
     }
 
-    if (loginForm) {
-        const roleSelect = qs("#login-role");
-        roleSelect?.addEventListener("change", setLoginRoleUI);
-        setLoginRoleUI();
-
-        loginForm.addEventListener("submit", async (event) => {
-            event.preventDefault();
-            const status = qs("#login-status");
-            const role = qs("#login-role")?.value || "candidate";
-            const identifier = qs("#login-identifier")?.value.trim() || "";
-            const password = qs("#login-password")?.value || "";
-
-            if (!identifier || !password) {
-                if (status) status.textContent = "Please enter login ID and password.";
-                toast("Please enter login ID and password.");
-                return;
-            }
-
-            const backendReady = await checkApiHealth();
-            if (!backendReady) {
-                const message = getBackendConnectionMessage();
-                if (status) status.textContent = message;
-                toast(message);
-                return;
-            }
-
-            if (status) status.textContent = "Signing in...";
-            const submitButton = qs("#login-submit");
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.textContent = "Signing in...";
-            }
-
-            try {
-                const data = await apiRequest("/api/auth/login", {
-                    method: "POST",
-                    body: { role, identifier, password },
-                    auth: false
-                });
-
-                if (!data.token || !data.user) {
-                    throw new Error(
-                        "Login response was incomplete (no token). The API may not be deployed correctly — open /api/health on your site."
-                    );
-                }
-
-                setSession(data.token, data.user);
-                if (status) status.textContent = "Login successful. Redirecting...";
-                toast("Login successful.");
-                window.setTimeout(() => {
-                    window.location.href = roleHomePage(data.user?.role || role);
-                }, 500);
-            } catch (error) {
-                if (status) status.textContent = error.message || "Login failed.";
-                toast(error.message || "Login failed.");
-            } finally {
-                if (submitButton) {
-                    submitButton.disabled = false;
-                    submitButton.textContent = "Login";
-                }
-            }
-        });
-    }
+    initLoginWizard();
 }
 
 async function enforceRoleAccess() {
@@ -1150,10 +1250,10 @@ function initDynamicRoleCards() {
     qsa("[data-role-select]").forEach((button) => {
         button.addEventListener("click", () => {
             const targetRole = button.getAttribute("data-role-select");
-            const roleSelect = qs("#login-role");
-            if (roleSelect && targetRole) {
-                roleSelect.value = targetRole;
-                setLoginRoleUI();
+            if (targetRole === "hr_admin") {
+                window.location.href = "login.html#admin";
+            } else if (targetRole) {
+                window.location.href = "login.html#candidate";
             }
         });
     });
@@ -1184,5 +1284,5 @@ async function init() {
 
 init().catch((error) => {
     console.error(error);
-    toast("Something went wrong while loading this page.");
+    toast(formatToastMessage(error));
 });
