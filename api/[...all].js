@@ -222,16 +222,55 @@ function requireRole(req, res, role) {
   return auth;
 }
 
+const MAX_BODY_BYTES = 12 * 1024 * 1024;
+
+/**
+ * Vercel Node runtimes: use classic stream events — `for await (req)` can throw
+ * (async iterable not supported / flaky), causing FUNCTION_INVOCATION_FAILED.
+ */
 async function readRawBody(req) {
   if (req.method === "GET" || req.method === "HEAD") {
     return Buffer.alloc(0);
   }
 
-  const chunks = [];
-  for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  if (req.body && Buffer.isBuffer(req.body)) {
+    if (req.body.length > MAX_BODY_BYTES) {
+      throw new Error("Request body too large.");
+    }
+    return req.body;
   }
-  return Buffer.concat(chunks);
+
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let total = 0;
+    let settled = false;
+    const fail = (err) => {
+      if (settled) return;
+      settled = true;
+      reject(err);
+    };
+    const ok = (buf) => {
+      if (settled) return;
+      settled = true;
+      resolve(buf);
+    };
+    req.on("data", (chunk) => {
+      const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      total += buf.length;
+      if (total > MAX_BODY_BYTES) {
+        try {
+          req.destroy();
+        } catch (_) {
+          /* ignore */
+        }
+        fail(new Error("Request body too large."));
+        return;
+      }
+      chunks.push(buf);
+    });
+    req.on("end", () => ok(Buffer.concat(chunks)));
+    req.on("error", fail);
+  });
 }
 
 function parseMultipart(buffer, contentType) {
@@ -372,12 +411,27 @@ function handleUploadsRoute(req, res, apiPath) {
         : "application/octet-stream";
   res.statusCode = 200;
   res.setHeader("Content-Type", contentType);
-  fs.createReadStream(absPath).pipe(res);
+  const stream = fs.createReadStream(absPath);
+  stream.on("error", () => {
+    if (!res.headersSent) {
+      sendJson(res, 500, { message: "Could not read file." });
+    } else {
+      res.end();
+    }
+  });
+  stream.pipe(res);
   return true;
 }
 
 module.exports = async (req, res) => {
   try {
+    if (!req || typeof req.on !== "function") {
+      res.statusCode = 500;
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.end(JSON.stringify({ message: "Invalid request (expected Node.js IncomingMessage)." }));
+      return;
+    }
+
     setCorsHeaders(req, res);
     if (req.method === "OPTIONS") {
       res.statusCode = 204;
@@ -385,10 +439,23 @@ module.exports = async (req, res) => {
       return;
     }
 
-    initDbIfMissing();
+    try {
+      initDbIfMissing();
+    } catch (storageErr) {
+      console.error("Storage init failed:", storageErr);
+      sendJson(res, 500, { message: "Storage initialization failed.", detail: storageErr?.message || String(storageErr) });
+      return;
+    }
 
-    const url = new URL(req.url, `https://${req.headers.host || "localhost"}`);
-    const pathname = (url.pathname || "/").replace(/\/+$/, "") || "/";
+    const rawPath = (typeof req.url === "string" && req.url.length ? req.url.split("?")[0] : "/") || "/";
+    const host = String(req.headers["x-forwarded-host"] || req.headers.host || "localhost").split(",")[0].trim();
+    let pathname = "/";
+    try {
+      pathname = new URL(rawPath, `https://${host}`).pathname || "/";
+    } catch {
+      pathname = rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
+    }
+    pathname = (pathname || "/").replace(/\/+$/, "") || "/";
     const apiPath = pathname.startsWith("/api") ? (pathname.slice(4) || "/") : pathname;
 
     if (handleUploadsRoute(req, res, apiPath)) return;

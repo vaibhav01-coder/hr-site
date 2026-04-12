@@ -119,6 +119,26 @@ function toast(message) {
     window.setTimeout(() => item.remove(), 2800);
 }
 
+function parseApiPayload(text, response) {
+    const trimmed = String(text || "").trim();
+    if (!trimmed) {
+        return {};
+    }
+    try {
+        return JSON.parse(trimmed);
+    } catch {
+        const hint = trimmed.slice(0, 280);
+        if (!response.ok) {
+            return {
+                message: hint.includes("<!DOCTYPE") || hint.includes("<html")
+                    ? `Server returned HTML instead of JSON (HTTP ${response.status}). The /api route may be missing on deployment — redeploy with the api/ folder or check Vercel logs.`
+                    : hint || `HTTP ${response.status}`
+            };
+        }
+        return {};
+    }
+}
+
 async function apiRequest(path, options = {}) {
     const {
         method = "GET",
@@ -127,7 +147,7 @@ async function apiRequest(path, options = {}) {
         auth = true
     } = options;
 
-    const headers = {};
+    const headers = { Accept: "application/json" };
     if (auth) {
         const token = getAuthToken();
         if (!token) {
@@ -175,16 +195,18 @@ async function apiRequest(path, options = {}) {
         throw new Error(lastNetworkError?.message ? getBackendConnectionMessage() : getBackendConnectionMessage());
     }
 
-    let payload = {};
-    try {
-        payload = await response.json();
-    } catch (error) {
-        payload = {};
-    }
+    const text = await response.text();
+    const payload = parseApiPayload(text, response);
 
     if (!response.ok) {
         if (response.status === 401) clearSession();
-        throw new Error(payload.message || "Request failed.");
+        const msg =
+            payload.message ||
+            payload.detail ||
+            payload.error ||
+            (typeof payload === "string" ? payload : null) ||
+            `Request failed (HTTP ${response.status}).`;
+        throw new Error(msg);
     }
 
     return payload;
@@ -1046,6 +1068,12 @@ function initAuthForms() {
                     body: { role, identifier, password },
                     auth: false
                 });
+
+                if (!data.token || !data.user) {
+                    throw new Error(
+                        "Login response was incomplete (no token). The API may not be deployed correctly — open /api/health on your site."
+                    );
+                }
 
                 setSession(data.token, data.user);
                 if (status) status.textContent = "Login successful. Redirecting...";

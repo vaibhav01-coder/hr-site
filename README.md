@@ -74,3 +74,20 @@ Backend runs by default on: `http://localhost:4000`
 2. Ensure `server/.env` exists (Supabase keys can stay blank for local mode).
 3. Keep `api-config.js` `baseUrl` same as backend URL.
 4. For local development, keep `FRONTEND_ORIGIN=*` in `server/.env`.
+
+## 7) Vercel: `FUNCTION_INVOCATION_FAILED` / 500 on `/api/*`
+
+The serverless handler in `api/[...all].js` reads POST bodies with Node stream events (compatible with Vercel’s Node runtime). After deploying:
+
+1. Open `https://YOUR_DOMAIN.vercel.app/api/health` — you should see JSON: `{ "ok": true, ... }`.
+2. In Vercel → Project → **Settings → Environment Variables**, set at least:
+   - `JWT_SECRET` — long random string (required for stable tokens in production).
+   - Optionally `ADMIN_LOGIN_ID` and `ADMIN_LOGIN_PASSWORD` for HR admin login (defaults exist but change them in production).
+
+If `/api/health` still errors, open **Deployments → Functions → Logs** for the failing request and redeploy after pulling the latest `api/[...all].js` changes.
+
+### Admin login (`hr_admin`)
+
+- Default credentials (only if you did **not** set env vars on Vercel): **ID** `admin` · **Password** `admin123`.
+- If you set `ADMIN_LOGIN_ID` / `ADMIN_LOGIN_PASSWORD` in Vercel, you **must** use those values or login will fail with “Invalid admin ID or password.”
+- After deploying, test: `https://YOUR_DOMAIN.vercel.app/api/health` (should return JSON). If that works but login still fails, open the browser **Network** tab → `auth/login` → check the response body; the app now shows a clear message instead of only “Request failed.”
