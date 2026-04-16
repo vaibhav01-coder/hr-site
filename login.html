@@ -4,143 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In | HR Hiring Portal</title>
-    <meta name="description" content="Sign in to the HR Hiring Portal as a candidate or administrator.">
+    <meta name="description" content="Sign in as candidate or administrator.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <style>
-        body { background: #0d0d12; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
-        body::before { content: ''; position: fixed; top: -200px; left: 50%; transform: translateX(-50%); width: 800px; height: 600px; background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%); pointer-events: none; z-index: 0; }
-        .auth-wrap { position: relative; z-index: 1; width: 100%; max-width: 460px; }
-        .auth-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; justify-content: center; }
-        .auth-brand-mark { width: 38px; height: 38px; background: linear-gradient(135deg, #6366f1, #a78bfa); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: #fff; }
-        .auth-brand-text { font-size: 17px; font-weight: 700; color: #f0f0ff; }
-        .auth-panel { background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 40px; backdrop-filter: blur(10px); }
-        .auth-step { }
-        .auth-step.is-hidden { display: none; }
-        /* Step: role choice */
-        .role-pick-title { font-size: 26px; font-weight: 800; color: #f0f0ff; margin: 0 0 8px; }
-        .role-pick-sub { font-size: 14px; color: #8b8ba7; margin: 0 0 28px; line-height: 1.6; }
-        .role-split-new { display: flex; flex-direction: column; gap: 14px; }
-        .role-tile-new { display: flex; align-items: center; gap: 16px; padding: 18px 20px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); cursor: pointer; transition: all 0.22s; text-align: left; width: 100%; }
-        .role-tile-new:hover { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.07); transform: translateX(4px); }
-        .role-tile-new.admin-tile:hover { border-color: rgba(167,139,250,0.5); background: rgba(167,139,250,0.07); }
-        .rtile-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-        .rtile-icon.c-icon { background: rgba(99,102,241,0.15); }
-        .rtile-icon.a-icon { background: rgba(167,139,250,0.15); }
-        .rtile-body { flex: 1; }
-        .rtile-label { font-size: 15px; font-weight: 600; color: #f0f0ff; display: block; }
-        .rtile-hint { font-size: 12px; color: #8b8ba7; display: block; margin-top: 2px; }
-        .rtile-arrow { color: #6b6b80; font-size: 18px; }
-        /* Form step */
-        .step-back { background: none; border: none; color: #8b8ba7; font-size: 13px; cursor: pointer; padding: 0 0 8px; display: flex; align-items: center; gap: 6px; margin-bottom: 20px; transition: color 0.2s; }
-        .step-back:hover { color: #e0e0f0; }
-        .step-title { font-size: 22px; font-weight: 800; color: #f0f0ff; margin: 0 0 6px; }
-        .step-sub { font-size: 14px; color: #8b8ba7; margin: 0 0 28px; line-height: 1.6; }
-        /* Form fields */
-        .auth-field { margin-bottom: 18px; }
-        .auth-field label { display: block; font-size: 13px; font-weight: 600; color: #c0c0d8; margin-bottom: 8px; }
-        .auth-field input { width: 100%; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 12px 14px; color: #f0f0ff; font-size: 15px; font-family: inherit; transition: border-color 0.2s; outline: none; box-sizing: border-box; }
-        .auth-field input:focus { border-color: rgba(99,102,241,0.6); background: rgba(99,102,241,0.05); }
-        .auth-field input::placeholder { color: #5a5a70; }
-        .auth-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #6366f1, #7c3aed); border: none; border-radius: 12px; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; margin-top: 8px; font-family: inherit; }
-        .auth-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99,102,241,0.35); }
-        .auth-btn:disabled { opacity: 0.6; transform: none; cursor: not-allowed; }
-        .auth-btn.admin-btn { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
-        .auth-status { margin-top: 12px; font-size: 13px; color: #8b8ba7; min-height: 20px; text-align: center; }
-        .auth-status.error { color: #ef4444; }
-        .auth-links-stack { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .auth-link { font-size: 13px; color: #8b8ba7; text-decoration: none; text-align: center; display: block; transition: color 0.2s; }
-        .auth-link:hover { color: #e0e0f0; }
-        .auth-link span { color: #a78bfa; font-weight: 600; }
-        .auth-divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 20px 0; }
-    </style>
 </head>
 <body data-page="login">
-    <div class="auth-wrap">
-        <!-- Brand -->
-        <div class="auth-brand">
-            <div class="auth-brand-mark">HR</div>
-            <span class="auth-brand-text">Hiring Portal</span>
-        </div>
-
-        <!-- Auth Panel -->
-        <div class="auth-panel">
-
-            <!-- Step 1: Choose role -->
+    <main class="auth-shell">
+        <section class="surface auth-card auth-flow-card">
             <div id="auth-step-role" class="auth-step">
-                <h1 class="role-pick-title">Welcome back 👋</h1>
-                <p class="role-pick-sub">How do you want to continue? Choose your role to proceed.</p>
-                <div class="role-split-new">
-                    <button class="role-tile-new" id="btn-choose-candidate" type="button">
-                        <div class="rtile-icon c-icon">🎯</div>
-                        <div class="rtile-body">
-                            <span class="rtile-label">Candidate</span>
-                            <span class="rtile-hint">Browse jobs, apply & track applications</span>
-                        </div>
-                        <span class="rtile-arrow">›</span>
-                    </button>
-                    <button class="role-tile-new admin-tile" id="btn-choose-admin" type="button">
-                        <div class="rtile-icon a-icon">🛡️</div>
-                        <div class="rtile-body">
-                            <span class="rtile-label">Administrator</span>
-                            <span class="rtile-hint">Post jobs, review applications & resumes</span>
-                        </div>
-                        <span class="rtile-arrow">›</span>
-                    </button>
+                <span class="eyebrow">Sign In</span>
+                <h1>Select your role</h1>
+                <p class="auth-lead">Continue as candidate or admin to access the correct dashboard.</p>
+                <div class="role-choice-grid">
+                    <button type="button" class="role-choice-btn" id="btn-choose-candidate">Candidate</button>
+                    <button type="button" class="role-choice-btn" id="btn-choose-admin">Administrator</button>
                 </div>
-                <hr class="auth-divider">
-                <a href="index.html" class="auth-link">← Back to home</a>
+                <p class="muted-line"><a href="index.html">Back to home</a></p>
             </div>
 
-            <!-- Step 2a: Candidate login -->
             <div id="auth-step-candidate" class="auth-step is-hidden">
-                <button class="step-back" id="btn-back-candidate" type="button">← Change role</button>
-                <h2 class="step-title">Candidate Sign In</h2>
-                <p class="step-sub">Sign in with the email and password you used when you registered.</p>
-                <form id="candidate-login-form" autocomplete="on">
-                    <div class="auth-field">
-                        <label for="candidate-email">Email Address</label>
-                        <input id="candidate-email" type="email" name="email" autocomplete="email" required placeholder="you@example.com">
-                    </div>
-                    <div class="auth-field">
-                        <label for="candidate-password">Password</label>
-                        <input id="candidate-password" type="password" name="password" autocomplete="current-password" required placeholder="Your password">
-                    </div>
-                    <button type="submit" class="auth-btn" id="candidate-login-submit">Sign In</button>
+                <button type="button" class="text-back" id="btn-back-candidate">Back to role selection</button>
+                <h2>Candidate Sign In</h2>
+                <p class="auth-lead">Use your registered email and password.</p>
+                <form id="candidate-login-form" class="auth-form" autocomplete="on">
+                    <label class="field">
+                        <span>Email Address</span>
+                        <input id="candidate-email" type="email" name="email" autocomplete="email" required>
+                    </label>
+                    <label class="field">
+                        <span>Password</span>
+                        <input id="candidate-password" type="password" name="password" autocomplete="current-password" required>
+                    </label>
+                    <button type="submit" class="btn btn-primary full-width" id="candidate-login-submit">Sign in</button>
                 </form>
-                <p class="auth-status" id="login-status-candidate"></p>
-                <hr class="auth-divider">
-                <div class="auth-links-stack">
-                    <a href="register.html" class="auth-link">New here? <span>Register with full details & resume</span></a>
-                    <a href="jobs.html" class="auth-link">Browse public jobs without signing in</a>
-                </div>
+                <p class="login-status-line" id="login-status-candidate"></p>
+                <p class="muted-line">New candidate? <a href="register.html">Create account</a></p>
             </div>
 
-            <!-- Step 2b: Admin login -->
             <div id="auth-step-admin" class="auth-step is-hidden">
-                <button class="step-back" id="btn-back-admin" type="button">← Change role</button>
-                <h2 class="step-title">Administrator Sign In</h2>
-                <p class="step-sub">Enter the <strong style="color:#a78bfa">Admin ID</strong> and <strong style="color:#a78bfa">password</strong> shared with you by HR. This area is not for candidates.</p>
-                <form id="admin-login-form" autocomplete="on">
-                    <div class="auth-field">
-                        <label for="admin-id">Admin ID</label>
-                        <input id="admin-id" type="text" name="adminId" autocomplete="username" required placeholder="Provided admin login ID">
-                    </div>
-                    <div class="auth-field">
-                        <label for="admin-password">Password</label>
-                        <input id="admin-password" type="password" name="password" autocomplete="current-password" required placeholder="Admin password">
-                    </div>
-                    <button type="submit" class="auth-btn admin-btn" id="admin-login-submit">Sign In to Admin Panel</button>
+                <button type="button" class="text-back" id="btn-back-admin">Back to role selection</button>
+                <h2>Admin Sign In</h2>
+                <p class="auth-lead">Enter admin ID and password shared by HR.</p>
+                <form id="admin-login-form" class="auth-form" autocomplete="on">
+                    <label class="field">
+                        <span>Admin ID</span>
+                        <input id="admin-id" type="text" name="adminId" autocomplete="username" required>
+                    </label>
+                    <label class="field">
+                        <span>Password</span>
+                        <input id="admin-password" type="password" name="password" autocomplete="current-password" required>
+                    </label>
+                    <button type="submit" class="btn btn-primary full-width" id="admin-login-submit">Sign in to admin panel</button>
                 </form>
-                <p class="auth-status" id="login-status-admin"></p>
-                <hr class="auth-divider">
-                <a href="index.html" class="auth-link">← Return to home</a>
+                <p class="login-status-line" id="login-status-admin"></p>
+                <p class="muted-line">Candidate account? <a href="login.html#candidate">Sign in as candidate</a></p>
             </div>
-
-        </div>
-    </div>
+        </section>
+    </main>
 
     <div id="toast-root" class="toast-root"></div>
     <script src="api-config.js?v=20260416a"></script>

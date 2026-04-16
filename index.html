@@ -3,177 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Hiring Portal — Welcome</title>
-    <meta name="description" content="Professional HR hiring portal. Candidates apply for jobs, admins manage applications and resumes.">
+    <title>HR Hiring Portal</title>
+    <meta name="description" content="Professional hiring portal for candidates and HR admins.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <style>
-        /* ── Landing-specific overrides ── */
-        body { background: #0d0d12; color: #e8e8f0; min-height: 100vh; display: flex; flex-direction: column; }
-        .landing-shell { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; position: relative; overflow: hidden; }
-        .landing-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
-        .landing-bg::before { content: ''; position: absolute; top: -200px; left: 50%; transform: translateX(-50%); width: 800px; height: 800px; background: radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%); }
-        .landing-bg::after { content: ''; position: absolute; bottom: -200px; right: -100px; width: 600px; height: 600px; background: radial-gradient(circle, rgba(167,139,250,0.12) 0%, transparent 70%); }
-        .landing-content { position: relative; z-index: 1; width: 100%; max-width: 900px; text-align: center; }
-        /* Brand */
-        .land-brand { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 48px; }
-        .land-brand-mark { width: 48px; height: 48px; background: linear-gradient(135deg, #6366f1, #a78bfa); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: #fff; letter-spacing: -0.5px; }
-        .land-brand-text { font-size: 20px; font-weight: 700; color: #f0f0ff; }
-        /* Headline */
-        .land-headline { font-size: clamp(32px, 5vw, 58px); font-weight: 900; line-height: 1.1; color: #f0f0ff; margin: 0 0 16px; letter-spacing: -1.5px; }
-        .land-headline span { background: linear-gradient(135deg, #6366f1, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .land-sub { font-size: 17px; color: #8b8ba7; margin: 0 0 60px; font-weight: 400; max-width: 480px; margin-left: auto; margin-right: auto; margin-bottom: 60px; }
-        /* Role cards */
-        .role-gateway { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; max-width: 720px; margin: 0 auto 40px; }
-        @media (max-width: 580px) { .role-gateway { grid-template-columns: 1fr; } }
-        .role-gate-card { background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 36px 30px; text-align: left; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; }
-        .role-gate-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(99,102,241,0.08), transparent); opacity: 0; transition: opacity 0.3s; }
-        .role-gate-card:hover { border-color: rgba(99,102,241,0.5); transform: translateY(-4px); box-shadow: 0 20px 60px rgba(99,102,241,0.15); }
-        .role-gate-card:hover::before { opacity: 1; }
-        .role-gate-card.admin-card:hover { border-color: rgba(167,139,250,0.5); box-shadow: 0 20px 60px rgba(167,139,250,0.15); }
-        .role-gate-card.admin-card::before { background: linear-gradient(135deg, rgba(167,139,250,0.08), transparent); }
-        .gate-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; font-size: 24px; }
-        .gate-icon.candidate-icon { background: rgba(99,102,241,0.15); }
-        .gate-icon.admin-icon { background: rgba(167,139,250,0.15); }
-        .gate-title { font-size: 22px; font-weight: 700; color: #f0f0ff; margin: 0 0 8px; }
-        .gate-desc { font-size: 14px; color: #8b8ba7; margin: 0 0 24px; line-height: 1.6; }
-        .gate-features { list-style: none; padding: 0; margin: 0 0 28px; display: flex; flex-direction: column; gap: 8px; }
-        .gate-features li { font-size: 13px; color: #a0a0b8; display: flex; align-items: center; gap: 8px; }
-        .gate-features li::before { content: '✓'; color: #6366f1; font-weight: 700; width: 16px; flex-shrink: 0; }
-        .admin-card .gate-features li::before { color: #a78bfa; }
-        .gate-cta { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #6366f1; transition: gap 0.2s; }
-        .admin-card .gate-cta { color: #a78bfa; }
-        .role-gate-card:hover .gate-cta { gap: 12px; }
-        /* Sub-options modal */
-        .candidate-options { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px; }
-        .candidate-options.visible { display: flex; }
-        .copt-box { background: #16161f; border: 1.5px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 40px; max-width: 480px; width: 100%; text-align: center; animation: slideUp 0.3s ease; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .copt-title { font-size: 26px; font-weight: 800; color: #f0f0ff; margin: 0 0 10px; }
-        .copt-sub { font-size: 14px; color: #8b8ba7; margin: 0 0 32px; }
-        .copt-buttons { display: flex; flex-direction: column; gap: 14px; }
-        .copt-btn { display: flex; align-items: center; gap: 16px; padding: 18px 22px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); cursor: pointer; text-decoration: none; transition: all 0.2s; }
-        .copt-btn:hover { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.08); transform: translateX(4px); }
-        .copt-btn-icon { width: 42px; height: 42px; border-radius: 10px; background: rgba(99,102,241,0.15); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
-        .copt-btn-text { text-align: left; }
-        .copt-btn-label { display: block; font-size: 15px; font-weight: 600; color: #f0f0ff; }
-        .copt-btn-hint { display: block; font-size: 12px; color: #8b8ba7; margin-top: 2px; }
-        .copt-close { margin-top: 24px; background: none; border: none; color: #8b8ba7; font-size: 14px; cursor: pointer; padding: 8px 16px; border-radius: 8px; transition: color 0.2s; }
-        .copt-close:hover { color: #e0e0f0; }
-        .land-footer { text-align: center; font-size: 12px; color: #6b6b80; margin-top: 48px; }
-        .land-footer a { color: #8b8ba7; text-decoration: none; }
-        .land-footer a:hover { color: #e0e0f0; }
-    </style>
 </head>
 <body data-page="home">
-    <!-- Animated background -->
-    <div class="landing-bg"></div>
+    <header class="site-header">
+        <div class="container nav-wrap">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">HR</span>
+                <span class="brand-text">Hiring Portal</span>
+            </a>
+            <nav class="site-nav inline-nav">
+                <a href="jobs.html">Jobs</a>
+                <a href="login.html">Sign in</a>
+                <a class="btn btn-primary btn-sm" href="register.html">Register</a>
+            </nav>
+        </div>
+    </header>
 
-    <main class="landing-shell">
-        <div class="landing-content">
-            <!-- Brand -->
-            <div class="land-brand">
-                <div class="land-brand-mark">HR</div>
-                <span class="land-brand-text">Hiring Portal</span>
+    <main class="section">
+        <div class="container">
+            <div class="page-head">
+                <span class="eyebrow">Hiring Platform</span>
+                <h1>Choose your role</h1>
+                <p>Start as candidate or admin with a clear, secure hiring workflow.</p>
             </div>
 
-            <!-- Headline -->
-            <h1 class="land-headline">Who are you<span>?</span></h1>
-            <p class="land-sub">Choose your role to get started. Candidates browse and apply for jobs — Admins manage everything.</p>
+            <section class="role-entry-grid">
+                <article class="surface role-entry-card">
+                    <h2>Candidate</h2>
+                    <p>Find jobs, submit applications, and track status updates.</p>
+                    <div class="role-entry-actions">
+                        <a class="btn btn-primary" href="login.html#candidate">Already Registered</a>
+                        <a class="btn btn-outline" href="register.html">New Registration</a>
+                    </div>
+                </article>
 
-            <!-- Role Gateway Cards -->
-            <div class="role-gateway">
-                <!-- Candidate Card -->
-                <div class="role-gate-card" id="btn-candidate-entry" tabindex="0" role="button" aria-label="I am a candidate">
-                    <div class="gate-icon candidate-icon">🎯</div>
-                    <h2 class="gate-title">I'm a Candidate</h2>
-                    <p class="gate-desc">Looking for a job? Browse openings, apply, and track your application status.</p>
-                    <ul class="gate-features">
-                        <li>Browse active job listings</li>
-                        <li>Submit your resume & details</li>
-                        <li>Track application status</li>
-                    </ul>
-                    <span class="gate-cta">Get Started →</span>
-                </div>
-
-                <!-- Admin Card -->
-                <a class="role-gate-card admin-card" href="login.html#admin" id="btn-admin-entry" aria-label="I am an admin">
-                    <div class="gate-icon admin-icon">🛡️</div>
-                    <h2 class="gate-title">I'm an Admin</h2>
-                    <p class="gate-desc">HR team? Sign in with your admin credentials to manage jobs and candidates.</p>
-                    <ul class="gate-features">
-                        <li>Post & manage job listings</li>
-                        <li>Review applications & resumes</li>
-                        <li>Update candidate status</li>
-                    </ul>
-                    <span class="gate-cta">Admin Login →</span>
-                </a>
-            </div>
-
-            <p class="land-footer">
-                Admin credentials are shared privately by HR &nbsp;|&nbsp;
-                <a href="jobs.html">Browse public jobs without login</a>
-            </p>
+                <article class="surface role-entry-card">
+                    <h2>Admin</h2>
+                    <p>Review applications, open resumes, create jobs, and update status.</p>
+                    <div class="role-entry-actions">
+                        <a class="btn btn-primary" href="login.html#admin">Admin Sign in</a>
+                        <a class="btn btn-outline" href="jobs.html">View Public Jobs</a>
+                    </div>
+                </article>
+            </section>
         </div>
     </main>
 
-    <!-- Candidate sub-options overlay -->
-    <div class="candidate-options" id="candidate-options-overlay" role="dialog" aria-modal="true" aria-label="Candidate options">
-        <div class="copt-box">
-            <h2 class="copt-title">Welcome, Candidate 👋</h2>
-            <p class="copt-sub">Have you registered before, or is this your first time?</p>
-            <div class="copt-buttons">
-                <a class="copt-btn" href="login.html#candidate" id="copt-signin">
-                    <div class="copt-btn-icon">🔑</div>
-                    <div class="copt-btn-text">
-                        <span class="copt-btn-label">Already Registered? Sign In</span>
-                        <span class="copt-btn-hint">Use your email & password to continue</span>
-                    </div>
-                </a>
-                <a class="copt-btn" href="register.html" id="copt-register">
-                    <div class="copt-btn-icon">📝</div>
-                    <div class="copt-btn-text">
-                        <span class="copt-btn-label">New Here? Register Now</span>
-                        <span class="copt-btn-hint">Fill your details, upload resume & apply</span>
-                    </div>
-                </a>
-            </div>
-            <button class="copt-close" id="copt-close-btn">↩ Go back</button>
-        </div>
-    </div>
-
     <script>
-        const candidateBtn = document.getElementById('btn-candidate-entry');
-        const overlay = document.getElementById('candidate-options-overlay');
-        const closeBtn = document.getElementById('copt-close-btn');
-
-        function openOverlay() {
-            overlay.classList.add('visible');
-            document.body.style.overflow = 'hidden';
-        }
-        function closeOverlay() {
-            overlay.classList.remove('visible');
-            document.body.style.overflow = '';
-        }
-
-        candidateBtn.addEventListener('click', openOverlay);
-        candidateBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') openOverlay(); });
-        closeBtn.addEventListener('click', closeOverlay);
-        overlay.addEventListener('click', (e) => { if (e.target === overlay) closeOverlay(); });
-
-        // Quick session check — if already logged in, redirect to right panel
         try {
-            const raw = localStorage.getItem('hr_portal_session_v1');
+            const raw = localStorage.getItem("hr_portal_session_v1");
             if (raw) {
                 const session = JSON.parse(raw);
                 if (session?.token && session?.user?.role) {
-                    const dest = session.user.role === 'hr_admin' ? 'hr-dashboard.html' : 'dashboard.html';
-                    window.location.replace(dest);
+                    window.location.replace(session.user.role === "hr_admin" ? "hr-dashboard.html" : "dashboard.html");
                 }
             }
-        } catch(e) {}
+        } catch (error) {
+            // Ignore session parse failures on landing page.
+        }
     </script>
 </body>
 </html>
