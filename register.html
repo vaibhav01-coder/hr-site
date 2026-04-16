@@ -8,93 +8,102 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260416c">
 </head>
 <body data-page="register">
     <main class="auth-shell">
-        <section class="surface auth-card auth-card-wide">
-            <span class="eyebrow">Candidate Registration</span>
-            <h1>Create your account</h1>
-            <p class="auth-lead">Complete all details and upload your resume to apply for jobs.</p>
+        <div class="hpro-auth-layout hpro-auth-layout-wide">
+            <section class="surface auth-card auth-card-wide">
+                <span class="eyebrow">Candidate Registration</span>
+                <h1>Create your account</h1>
+                <p class="auth-lead">Complete your professional profile and upload resume to apply faster.</p>
 
-            <form id="register-form" class="auth-form" enctype="multipart/form-data" novalidate>
-                <div class="field-grid">
-                    <label class="field">
-                        <span>Full Name *</span>
-                        <input id="register-name" type="text" required>
-                    </label>
-                    <label class="field">
-                        <span>Email Address *</span>
-                        <input id="register-email" type="email" required autocomplete="email">
-                    </label>
-                    <label class="field">
-                        <span>Phone Number *</span>
-                        <input id="register-phone" type="tel" required>
-                    </label>
-                    <label class="field">
-                        <span>Password *</span>
-                        <input id="register-password" type="password" minlength="6" required autocomplete="new-password">
-                    </label>
-                    <label class="field">
-                        <span>Date of Birth</span>
-                        <input id="register-dob" type="date">
-                    </label>
-                    <label class="field">
-                        <span>Gender</span>
-                        <select id="register-gender">
-                            <option value="">Select</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </label>
-                    <label class="field">
-                        <span>Highest Qualification</span>
-                        <select id="register-qualification">
-                            <option value="">Select qualification</option>
-                            <option>10th Pass</option>
-                            <option>12th Pass</option>
-                            <option>ITI</option>
-                            <option>Diploma</option>
-                            <option>Graduate</option>
-                            <option>Post Graduate</option>
-                        </select>
-                    </label>
-                    <label class="field">
-                        <span>Experience (Years)</span>
-                        <input id="register-experience" type="number" min="0" max="40">
-                    </label>
-                    <label class="field">
-                        <span>Current Job Title</span>
-                        <input id="register-current-title" type="text">
-                    </label>
-                    <label class="field">
-                        <span>LinkedIn URL</span>
-                        <input id="register-linkedin" type="url">
-                    </label>
-                    <label class="field full">
-                        <span>Skills (comma separated)</span>
-                        <input id="register-skills" type="text" placeholder="Machine Operation, Quality Check">
-                    </label>
-                    <label class="field full">
-                        <span>Address</span>
-                        <textarea id="register-address" rows="3"></textarea>
-                    </label>
-                    <label class="field full">
-                        <span>Resume Upload * (PDF, DOC, DOCX up to 5MB)</span>
-                        <input id="register-resume" type="file" accept=".pdf,.doc,.docx" required>
-                    </label>
+                <form id="register-form" class="auth-form" enctype="multipart/form-data" novalidate>
+                    <div class="field-grid">
+                        <label class="field">
+                            <span>Full Name *</span>
+                            <input id="register-name" type="text" required>
+                        </label>
+                        <label class="field">
+                            <span>Email Address *</span>
+                            <input id="register-email" type="email" required autocomplete="email">
+                        </label>
+                        <label class="field">
+                            <span>Phone Number *</span>
+                            <input id="register-phone" type="tel" required>
+                        </label>
+                        <label class="field">
+                            <span>Password *</span>
+                            <input id="register-password" type="password" minlength="6" required autocomplete="new-password">
+                        </label>
+                        <label class="field">
+                            <span>Date of Birth</span>
+                            <input id="register-dob" type="date">
+                        </label>
+                        <label class="field">
+                            <span>Gender</span>
+                            <select id="register-gender">
+                                <option value="">Select</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>Highest Qualification</span>
+                            <select id="register-qualification">
+                                <option value="">Select qualification</option>
+                                <option>10th Pass</option>
+                                <option>12th Pass</option>
+                                <option>ITI</option>
+                                <option>Diploma</option>
+                                <option>Graduate</option>
+                                <option>Post Graduate</option>
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>Experience (Years)</span>
+                            <input id="register-experience" type="number" min="0" max="40">
+                        </label>
+                        <label class="field">
+                            <span>Current Job Title</span>
+                            <input id="register-current-title" type="text">
+                        </label>
+                        <label class="field">
+                            <span>LinkedIn URL</span>
+                            <input id="register-linkedin" type="url">
+                        </label>
+                        <label class="field full">
+                            <span>Skills (comma separated)</span>
+                            <input id="register-skills" type="text" placeholder="Machine Operation, Quality Check">
+                        </label>
+                        <label class="field full">
+                            <span>Address</span>
+                            <textarea id="register-address" rows="3"></textarea>
+                        </label>
+                        <label class="field full">
+                            <span>Resume Upload * (PDF, DOC, DOCX up to 5MB)</span>
+                            <input id="register-resume" type="file" accept=".pdf,.doc,.docx" required>
+                        </label>
+                    </div>
+                    <button id="register-submit" type="submit" class="btn btn-primary full-width">Register</button>
+                </form>
+
+                <p class="login-status-line" id="register-status">Fill required fields and submit.</p>
+                <p class="muted-line">Already registered? <a href="login.html#candidate">Sign in</a></p>
+            </section>
+            <aside class="surface hpro-auth-media">
+                <img src="assets/hiring-campaign.jpeg" alt="Candidate registration banner">
+                <div class="hpro-auth-media-copy">
+                    <h3>Profile first, apply faster</h3>
+                    <p>Once you register with resume and details, job applications become faster and status tracking stays clear.</p>
                 </div>
-                <button id="register-submit" type="submit" class="btn btn-primary full-width">Register</button>
-            </form>
-
-            <p class="login-status-line" id="register-status">Fill required fields and submit.</p>
-            <p class="muted-line">Already registered? <a href="login.html#candidate">Sign in</a></p>
-        </section>
+            </aside>
+        </div>
     </main>
 
     <div id="toast-root" class="toast-root"></div>
-    <script src="api-config.js?v=20260416b"></script>
-    <script src="app.js?v=20260416b"></script>
+    <script src="api-config.js?v=20260416c"></script>
+    <script src="app.js?v=20260416c"></script>
 </body>
 </html>

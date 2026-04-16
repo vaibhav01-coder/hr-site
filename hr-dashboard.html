@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260416c">
 </head>
 <body data-page="hr-dashboard" class="admin-shell">
     <header class="site-header slim">
@@ -22,11 +22,21 @@
     </header>
     <main class="section">
         <div class="container">
+            <section class="surface hpro-page-banner">
+                <div class="hpro-page-banner-copy">
+                    <span class="eyebrow">Admin Panel</span>
+                    <h1 id="admin-welcome-heading">HR control center</h1>
+                    <p id="admin-welcome-line">Manage job listings, incoming applications, and candidate status.</p>
+                </div>
+                <div class="hpro-page-banner-media">
+                    <img src="assets/hiring-campaign.jpeg" alt="Admin hiring operations banner">
+                </div>
+            </section>
             <div class="admin-welcome">
                 <div>
                     <p class="eyebrow" style="margin-bottom:6px;">Administrator</p>
-                    <h2 id="admin-welcome-heading">HR control center</h2>
-                    <p id="admin-welcome-line">Manage job listings, incoming applications, and candidate status.</p>
+                    <h2>Operations dashboard</h2>
+                    <p>Post roles, review resumes, and update candidate status from one workspace.</p>
                 </div>
             </div>
 
@@ -104,8 +114,8 @@
         </div>
     </main>
     <div id="toast-root" class="toast-root"></div>
-    <script src="api-config.js?v=20260416b"></script>
-    <script src="app.js?v=20260416b"></script>
+    <script src="api-config.js?v=20260416c"></script>
+    <script src="app.js?v=20260416c"></script>
 </body>
 </html>
 

@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260416c">
 </head>
 <body data-page="home">
     <header class="site-header">
@@ -26,60 +26,82 @@
         </div>
     </header>
 
-    <main class="section">
+    <main class="section hpro-page-space">
         <div class="container">
-            <div class="page-head">
-                <span class="eyebrow">Now Hiring</span>
-                <h1>Find your next opportunity</h1>
-                <p>Browse active openings, review role details, and apply directly. You only need to register or sign in at application time.</p>
-            </div>
-
-            <section class="surface" style="margin-bottom:16px;">
-                <div class="summary-list">
-                    <div class="summary-item"><span>Hiring Mode</span><strong>Direct Application</strong></div>
-                    <div class="summary-item"><span>For Candidates</span><strong>Browse jobs without login</strong></div>
-                    <div class="summary-item"><span>At Apply Step</span><strong>Login or register required</strong></div>
-                    <div class="summary-item"><span>Admin Access</span><strong>ID and password based sign in</strong></div>
+            <section class="surface hpro-hero">
+                <div class="hpro-hero-content">
+                    <span class="eyebrow">Now Hiring</span>
+                    <h1>Build your career with trusted employers</h1>
+                    <p>Explore verified openings, review role details, and apply in minutes. Candidates can browse freely and sign in only when applying.</p>
+                    <div class="hero-actions">
+                        <a class="btn btn-primary" href="jobs.html">Explore jobs</a>
+                        <a class="btn btn-outline" href="register.html">Create profile</a>
+                        <a class="btn btn-outline" href="login.html#admin">Admin sign in</a>
+                    </div>
+                    <div class="hpro-kpi-grid">
+                        <div class="hpro-kpi-card">
+                            <strong>Fast Apply</strong>
+                            <span>Resume-led application workflow</span>
+                        </div>
+                        <div class="hpro-kpi-card">
+                            <strong>Verified Roles</strong>
+                            <span>Curated openings from HR teams</span>
+                        </div>
+                        <div class="hpro-kpi-card">
+                            <strong>Live Tracking</strong>
+                            <span>Candidate and admin dashboards</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="hero-actions" style="margin-top:12px;">
-                    <a class="btn btn-primary" href="jobs.html">Explore all jobs</a>
-                    <a class="btn btn-outline" href="register.html">Create candidate account</a>
-                    <a class="btn btn-outline" href="login.html#admin">Admin login</a>
+                <div class="hpro-hero-media">
+                    <img src="assets/hiring-campaign.jpeg" alt="Professional hiring campaign banner">
                 </div>
             </section>
 
-            <section>
-                <div class="section-head" style="margin-bottom:10px;">
+            <section class="hpro-section">
+                <div class="section-head">
                     <span class="eyebrow">Featured Roles</span>
                     <h2>Open positions</h2>
-                    <p>Latest active roles from the hiring team.</p>
+                    <p>Latest active opportunities from our hiring partners.</p>
                 </div>
                 <div id="featured-jobs" class="cards-grid"></div>
             </section>
 
-            <section class="grid" style="margin-top:16px;">
-                <article class="surface role-entry-card">
-                    <h3>How candidate flow works</h3>
-                    <div class="summary-list">
-                        <div class="summary-item"><span>Step 1</span><strong>Browse jobs</strong></div>
-                        <div class="summary-item"><span>Step 2</span><strong>Open role detail</strong></div>
-                        <div class="summary-item"><span>Step 3</span><strong>Click apply</strong></div>
-                        <div class="summary-item"><span>Step 4</span><strong>Login/Register and submit</strong></div>
+            <section class="hpro-section hpro-two-col">
+                <article class="surface hpro-info-card">
+                    <span class="eyebrow">Candidate Experience</span>
+                    <h3>Simple, clear, and application-ready</h3>
+                    <p>Search by skills and location, review complete job details, and apply with your registered profile and resume.</p>
+                    <div class="hero-actions">
+                        <a class="btn btn-primary" href="jobs.html">Browse all jobs</a>
+                        <a class="btn btn-outline" href="login.html#candidate">Candidate sign in</a>
                     </div>
                 </article>
+                <article class="surface hpro-image-card">
+                    <img src="assets/hiring-campaign-2.jpeg" alt="Hiring team and candidate opportunity poster">
+                </article>
+            </section>
 
-                <article class="surface role-entry-card">
-                    <h3>How admin flow works</h3>
-                    <div class="summary-list">
-                        <div class="summary-item"><span>Step 1</span><strong>Admin sign in</strong></div>
-                        <div class="summary-item"><span>Step 2</span><strong>Review applications</strong></div>
-                        <div class="summary-item"><span>Step 3</span><strong>Open resumes</strong></div>
-                        <div class="summary-item"><span>Step 4</span><strong>Update status and post jobs</strong></div>
-                    </div>
-                    <div class="role-entry-actions">
-                        <a class="btn btn-primary" href="login.html#admin">Go to admin sign in</a>
-                    </div>
-                </article>
+            <section class="hpro-section">
+                <div class="grid role-cards">
+                    <article class="surface role-card hpro-role-card">
+                        <h3>Candidate dashboard</h3>
+                        <p>Track each application stage and stay updated on shortlisting and outcomes.</p>
+                    </article>
+                    <article class="surface role-card hpro-role-card">
+                        <h3>Admin operations</h3>
+                        <p>Manage jobs, review resumes, and update candidate status from one control panel.</p>
+                    </article>
+                    <article class="surface role-card hpro-role-card">
+                        <h3>Professional workflow</h3>
+                        <p>Clean forms, structured data, and responsive pages across mobile, tablet, and desktop.</p>
+                    </article>
+                </div>
+                <div class="hero-actions hpro-center-actions">
+                    <a class="btn btn-primary" href="jobs.html">Explore all jobs</a>
+                    <a class="btn btn-outline" href="login.html#candidate">Candidate sign in</a>
+                    <a class="btn btn-outline" href="login.html#admin">Admin panel sign in</a>
+                </div>
             </section>
         </div>
     </main>
@@ -98,7 +120,7 @@
             // Ignore session parse failures on landing page.
         }
     </script>
-    <script src="api-config.js?v=20260416b"></script>
-    <script src="app.js?v=20260416b"></script>
+    <script src="api-config.js?v=20260416c"></script>
+    <script src="app.js?v=20260416c"></script>
 </body>
 </html>

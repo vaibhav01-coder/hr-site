@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260416c">
 </head>
 <body data-page="job-detail">
     <header class="site-header slim">
@@ -19,14 +19,26 @@
             </nav>
         </div>
     </header>
-    <main class="section">
-        <div class="container job-detail-layout">
-            <section class="surface reveal" id="job-detail-main"></section>
-            <aside class="surface reveal" id="job-detail-side"></aside>
+    <main class="section hpro-page-space">
+        <div class="container">
+            <section class="surface hpro-page-banner">
+                <div class="hpro-page-banner-copy">
+                    <span class="eyebrow">Role Details</span>
+                    <h1>Review complete position information</h1>
+                    <p>Understand requirements, salary, and role scope before submitting your application.</p>
+                </div>
+                <div class="hpro-page-banner-media">
+                    <img src="assets/hiring-campaign.jpeg" alt="Job detail banner image">
+                </div>
+            </section>
+            <div class="job-detail-layout">
+                <section class="surface reveal" id="job-detail-main"></section>
+                <aside class="surface reveal" id="job-detail-side"></aside>
+            </div>
         </div>
     </main>
     <div id="toast-root" class="toast-root"></div>
-    <script src="api-config.js?v=20260416b"></script>
-    <script src="app.js?v=20260416b"></script>
+    <script src="api-config.js?v=20260416c"></script>
+    <script src="app.js?v=20260416c"></script>
 </body>
 </html>

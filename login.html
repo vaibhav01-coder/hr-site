@@ -8,64 +8,73 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260416c">
 </head>
 <body data-page="login">
     <main class="auth-shell">
-        <section class="surface auth-card auth-flow-card">
-            <div id="auth-step-role" class="auth-step">
-                <span class="eyebrow">Sign In</span>
-                <h1>Select your role</h1>
-                <p class="auth-lead">Continue as candidate or admin to access the correct dashboard.</p>
-                <div class="role-choice-grid">
-                    <button type="button" class="role-choice-btn" id="btn-choose-candidate">Candidate</button>
-                    <button type="button" class="role-choice-btn" id="btn-choose-admin">Administrator</button>
+        <div class="hpro-auth-layout">
+            <section class="surface auth-card auth-flow-card">
+                <div id="auth-step-role" class="auth-step">
+                    <span class="eyebrow">Sign In</span>
+                    <h1>Select your role</h1>
+                    <p class="auth-lead">Continue as candidate or admin to access the correct dashboard.</p>
+                    <div class="role-choice-grid">
+                        <button type="button" class="role-choice-btn" id="btn-choose-candidate">Candidate</button>
+                        <button type="button" class="role-choice-btn" id="btn-choose-admin">Administrator</button>
+                    </div>
+                    <p class="muted-line"><a href="index.html">Back to home</a></p>
                 </div>
-                <p class="muted-line"><a href="index.html">Back to home</a></p>
-            </div>
 
-            <div id="auth-step-candidate" class="auth-step is-hidden">
-                <button type="button" class="text-back" id="btn-back-candidate">Back to role selection</button>
-                <h2>Candidate Sign In</h2>
-                <p class="auth-lead">Use your registered email and password.</p>
-                <form id="candidate-login-form" class="auth-form" autocomplete="on">
-                    <label class="field">
-                        <span>Email Address</span>
-                        <input id="candidate-email" type="email" name="email" autocomplete="email" required>
-                    </label>
-                    <label class="field">
-                        <span>Password</span>
-                        <input id="candidate-password" type="password" name="password" autocomplete="current-password" required>
-                    </label>
-                    <button type="submit" class="btn btn-primary full-width" id="candidate-login-submit">Sign in</button>
-                </form>
-                <p class="login-status-line" id="login-status-candidate"></p>
-                <p class="muted-line">New candidate? <a href="register.html">Create account</a></p>
-            </div>
+                <div id="auth-step-candidate" class="auth-step is-hidden">
+                    <button type="button" class="text-back" id="btn-back-candidate">Back to role selection</button>
+                    <h2>Candidate Sign In</h2>
+                    <p class="auth-lead">Use your registered email and password.</p>
+                    <form id="candidate-login-form" class="auth-form" autocomplete="on">
+                        <label class="field">
+                            <span>Email Address</span>
+                            <input id="candidate-email" type="email" name="email" autocomplete="email" required>
+                        </label>
+                        <label class="field">
+                            <span>Password</span>
+                            <input id="candidate-password" type="password" name="password" autocomplete="current-password" required>
+                        </label>
+                        <button type="submit" class="btn btn-primary full-width" id="candidate-login-submit">Sign in</button>
+                    </form>
+                    <p class="login-status-line" id="login-status-candidate"></p>
+                    <p class="muted-line">New candidate? <a href="register.html">Create account</a></p>
+                </div>
 
-            <div id="auth-step-admin" class="auth-step is-hidden">
-                <button type="button" class="text-back" id="btn-back-admin">Back to role selection</button>
-                <h2>Admin Sign In</h2>
-                <p class="auth-lead">Enter admin ID and password shared by HR.</p>
-                <form id="admin-login-form" class="auth-form" autocomplete="on">
-                    <label class="field">
-                        <span>Admin ID</span>
-                        <input id="admin-id" type="text" name="adminId" autocomplete="username" required>
-                    </label>
-                    <label class="field">
-                        <span>Password</span>
-                        <input id="admin-password" type="password" name="password" autocomplete="current-password" required>
-                    </label>
-                    <button type="submit" class="btn btn-primary full-width" id="admin-login-submit">Sign in to admin panel</button>
-                </form>
-                <p class="login-status-line" id="login-status-admin"></p>
-                <p class="muted-line">Candidate account? <a href="login.html#candidate">Sign in as candidate</a></p>
-            </div>
-        </section>
+                <div id="auth-step-admin" class="auth-step is-hidden">
+                    <button type="button" class="text-back" id="btn-back-admin">Back to role selection</button>
+                    <h2>Admin Sign In</h2>
+                    <p class="auth-lead">Enter admin ID and password shared by HR.</p>
+                    <form id="admin-login-form" class="auth-form" autocomplete="on">
+                        <label class="field">
+                            <span>Admin ID</span>
+                            <input id="admin-id" type="text" name="adminId" autocomplete="username" required>
+                        </label>
+                        <label class="field">
+                            <span>Password</span>
+                            <input id="admin-password" type="password" name="password" autocomplete="current-password" required>
+                        </label>
+                        <button type="submit" class="btn btn-primary full-width" id="admin-login-submit">Sign in to admin panel</button>
+                    </form>
+                    <p class="login-status-line" id="login-status-admin"></p>
+                    <p class="muted-line">Candidate account? <a href="login.html#candidate">Sign in as candidate</a></p>
+                </div>
+            </section>
+            <aside class="surface hpro-auth-media">
+                <img src="assets/hiring-campaign-2.jpeg" alt="Professional hiring login banner">
+                <div class="hpro-auth-media-copy">
+                    <h3>Professional hiring workflow</h3>
+                    <p>Secure sign in for candidates and HR admins with dedicated dashboards and structured application management.</p>
+                </div>
+            </aside>
+        </div>
     </main>
 
     <div id="toast-root" class="toast-root"></div>
-    <script src="api-config.js?v=20260416b"></script>
-    <script src="app.js?v=20260416b"></script>
+    <script src="api-config.js?v=20260416c"></script>
+    <script src="app.js?v=20260416c"></script>
 </body>
 </html>
