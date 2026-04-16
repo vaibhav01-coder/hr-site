@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HR Hiring Portal</title>
-    <meta name="description" content="Professional hiring portal for candidates and HR admins.">
+    <meta name="description" content="Professional hiring platform with active job openings, direct applications, and HR tracking.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -19,7 +19,8 @@
             </a>
             <nav class="site-nav inline-nav">
                 <a href="jobs.html">Jobs</a>
-                <a href="login.html">Sign in</a>
+                <a href="login.html#candidate">Candidate Sign in</a>
+                <a href="login.html#admin">Admin Sign in</a>
                 <a class="btn btn-primary btn-sm" href="register.html">Register</a>
             </nav>
         </div>
@@ -28,33 +29,62 @@
     <main class="section">
         <div class="container">
             <div class="page-head">
-                <span class="eyebrow">Hiring Platform</span>
-                <h1>Choose your role</h1>
-                <p>Start as candidate or admin with a clear, secure hiring workflow.</p>
+                <span class="eyebrow">Now Hiring</span>
+                <h1>Find your next opportunity</h1>
+                <p>Browse active openings, review role details, and apply directly. You only need to register or sign in at application time.</p>
             </div>
 
-            <section class="role-entry-grid">
+            <section class="surface" style="margin-bottom:16px;">
+                <div class="summary-list">
+                    <div class="summary-item"><span>Hiring Mode</span><strong>Direct Application</strong></div>
+                    <div class="summary-item"><span>For Candidates</span><strong>Browse jobs without login</strong></div>
+                    <div class="summary-item"><span>At Apply Step</span><strong>Login or register required</strong></div>
+                    <div class="summary-item"><span>Admin Access</span><strong>ID and password based sign in</strong></div>
+                </div>
+                <div class="hero-actions" style="margin-top:12px;">
+                    <a class="btn btn-primary" href="jobs.html">Explore all jobs</a>
+                    <a class="btn btn-outline" href="register.html">Create candidate account</a>
+                    <a class="btn btn-outline" href="login.html#admin">Admin login</a>
+                </div>
+            </section>
+
+            <section>
+                <div class="section-head" style="margin-bottom:10px;">
+                    <span class="eyebrow">Featured Roles</span>
+                    <h2>Open positions</h2>
+                    <p>Latest active roles from the hiring team.</p>
+                </div>
+                <div id="featured-jobs" class="cards-grid"></div>
+            </section>
+
+            <section class="grid" style="margin-top:16px;">
                 <article class="surface role-entry-card">
-                    <h2>Candidate</h2>
-                    <p>Find jobs, submit applications, and track status updates.</p>
-                    <div class="role-entry-actions">
-                        <a class="btn btn-primary" href="login.html#candidate">Already Registered</a>
-                        <a class="btn btn-outline" href="register.html">New Registration</a>
+                    <h3>How candidate flow works</h3>
+                    <div class="summary-list">
+                        <div class="summary-item"><span>Step 1</span><strong>Browse jobs</strong></div>
+                        <div class="summary-item"><span>Step 2</span><strong>Open role detail</strong></div>
+                        <div class="summary-item"><span>Step 3</span><strong>Click apply</strong></div>
+                        <div class="summary-item"><span>Step 4</span><strong>Login/Register and submit</strong></div>
                     </div>
                 </article>
 
                 <article class="surface role-entry-card">
-                    <h2>Admin</h2>
-                    <p>Review applications, open resumes, create jobs, and update status.</p>
+                    <h3>How admin flow works</h3>
+                    <div class="summary-list">
+                        <div class="summary-item"><span>Step 1</span><strong>Admin sign in</strong></div>
+                        <div class="summary-item"><span>Step 2</span><strong>Review applications</strong></div>
+                        <div class="summary-item"><span>Step 3</span><strong>Open resumes</strong></div>
+                        <div class="summary-item"><span>Step 4</span><strong>Update status and post jobs</strong></div>
+                    </div>
                     <div class="role-entry-actions">
-                        <a class="btn btn-primary" href="login.html#admin">Admin Sign in</a>
-                        <a class="btn btn-outline" href="jobs.html">View Public Jobs</a>
+                        <a class="btn btn-primary" href="login.html#admin">Go to admin sign in</a>
                     </div>
                 </article>
             </section>
         </div>
     </main>
 
+    <div id="toast-root" class="toast-root"></div>
     <script>
         try {
             const raw = localStorage.getItem("hr_portal_session_v1");
@@ -68,5 +98,7 @@
             // Ignore session parse failures on landing page.
         }
     </script>
+    <script src="api-config.js?v=20260416b"></script>
+    <script src="app.js?v=20260416b"></script>
 </body>
 </html>

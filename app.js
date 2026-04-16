@@ -19,12 +19,24 @@ function getApiBaseUrl() {
     return (window.HR_API_CONFIG?.baseUrl || "http://localhost:4000").replace(/\/+$/, "");
 }
 
+function isLikelyLocalHost(hostname) {
+    if (!hostname) return true;
+    const host = String(hostname).trim().toLowerCase();
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1" || host.endsWith(".local")) {
+        return true;
+    }
+    if (/^10\./.test(host) || /^192\.168\./.test(host) || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) {
+        return true;
+    }
+    return false;
+}
+
 function getApiBaseCandidates() {
     const protocol = window.location.protocol === "http:" || window.location.protocol === "https:"
         ? window.location.protocol
         : "http:";
     const host = window.location.hostname || "localhost";
-    const isLocalHost = host === "localhost" || host === "127.0.0.1";
+    const isLocalHost = isLikelyLocalHost(host);
     const locationOrigin = window.location.origin.replace(/\/+$/, "");
     const configuredBase = getApiBaseUrl();
     const candidates = [];
@@ -46,9 +58,18 @@ function getApiBaseCandidates() {
     return [...new Set(candidates)];
 }
 
+function getApiPathCandidates(path) {
+    const normalizedPath = String(path || "").startsWith("/") ? String(path || "") : `/${String(path || "")}`;
+    const candidates = [normalizedPath];
+    if (normalizedPath.startsWith("/api/")) {
+        candidates.push(normalizedPath.slice(4));
+    }
+    return [...new Set(candidates)];
+}
+
 function getBackendConnectionMessage() {
     const targets = getApiBaseCandidates().join(", ");
-    return `Cannot connect to backend. Tried: ${targets}.`;
+    return `Cannot connect to backend API. Tried: ${targets}.`;
 }
 
 function getCurrentPageName() {
@@ -197,7 +218,7 @@ function parseApiPayload(text, response) {
         if (!response.ok) {
             return {
                 message: hint.includes("<!DOCTYPE") || hint.includes("<html")
-                    ? `Server returned HTML instead of JSON (HTTP ${response.status}). The /api route may be missing on deployment — redeploy with the api/ folder or check Vercel logs.`
+                    ? `Server returned HTML instead of JSON (HTTP ${response.status}). The /api route may be missing on deployment - redeploy with the api/ folder or check Vercel logs.`
                     : hint || `HTTP ${response.status}`
             };
         }
@@ -231,53 +252,70 @@ async function apiRequest(path, options = {}) {
     }
 
     const baseCandidates = getApiBaseCandidates();
-    let response = null;
+    const pathCandidates = getApiPathCandidates(path);
     let lastNetworkError = null;
+    let lastHttpMessage = "";
+    let lastHttpStatus = 0;
 
     for (const baseUrl of baseCandidates) {
-        try {
-            response = await fetch(`${baseUrl}${path}`, {
-                method,
-                headers,
-                body: requestBody
-            });
-            if (response.ok) {
-                break;
-            }
+        for (const requestPath of pathCandidates) {
+            const url = `${baseUrl}${requestPath}`;
+            try {
+                const response = await fetch(url, {
+                    method,
+                    headers,
+                    body: requestBody
+                });
+                const text = await response.text();
+                const payload = parseApiPayload(text, response);
+                if (response.ok) {
+                    return payload;
+                }
 
-            // If deployed same-origin doesn't have route yet, try next candidate.
-            if ((response.status === 404 || response.status === 405) && baseCandidates.length > 1) {
-                response = null;
-                continue;
+                if (response.status === 401) clearSession();
+
+                const message = apiErrorMessage(payload, response.status);
+                lastHttpMessage = message;
+                lastHttpStatus = response.status;
+
+                const hasFallbackRoutes = baseCandidates.length > 1 || pathCandidates.length > 1;
+                if (hasFallbackRoutes && (response.status === 404 || response.status === 405)) {
+                    continue;
+                }
+
+                throw new Error(message);
+            } catch (error) {
+                if (error instanceof Error && error.message === lastHttpMessage) {
+                    throw error;
+                }
+                lastNetworkError = error;
             }
-            break;
-        } catch (error) {
-            lastNetworkError = error;
-            response = null;
         }
     }
 
-    if (!response) {
-        throw new Error(lastNetworkError?.message ? getBackendConnectionMessage() : getBackendConnectionMessage());
+    if (lastHttpMessage) {
+        if (lastHttpStatus === 404 || /route not found/i.test(lastHttpMessage) || /the page could not be found/i.test(lastHttpMessage)) {
+            throw new Error("Backend API route was not found. Please run backend on port 4000 or deploy the /api routes.");
+        }
+        throw new Error(lastHttpMessage);
     }
 
-    const text = await response.text();
-    const payload = parseApiPayload(text, response);
-
-    if (!response.ok) {
-        if (response.status === 401) clearSession();
-        throw new Error(apiErrorMessage(payload, response.status));
+    if (lastNetworkError) {
+        throw new Error(getBackendConnectionMessage());
     }
 
-    return payload;
+    throw new Error(getBackendConnectionMessage());
 }
 
 async function checkApiHealth() {
     try {
-        await apiRequest("/api/health", { auth: false });
-        return true;
+        const response = await apiRequest("/api/health", { auth: false });
+        if (response && response.ok === false) {
+            return { ok: false, error: new Error("Backend health check failed.") };
+        }
+        return { ok: true };
     } catch (error) {
-        return false;
+        return { ok: false, error };
     }
 }
 
@@ -1077,7 +1115,11 @@ function initLogoutActions() {
 }
 
 function getErrorMessage(error) {
-    return formatToastMessage(error);
+    const message = formatToastMessage(error);
+    if (/the page could not be found/i.test(message) || /route not found/i.test(message)) {
+        return "Backend API route was not found. Please run backend on port 4000 or deploy the /api routes.";
+    }
+    return message;
 }
 
 function showLoginStep(step) {
@@ -1114,18 +1156,18 @@ function initLoginWizard() {
             toast("Please enter email and password.");
             return;
         }
-        const backendReady = await checkApiHealth();
-        if (!backendReady) {
-            const message = getBackendConnectionMessage();
+        const backendHealth = await checkApiHealth();
+        if (!backendHealth.ok) {
+            const message = getErrorMessage(backendHealth.error || getBackendConnectionMessage());
             if (status) status.textContent = message;
             toast(message);
             return;
         }
-        if (status) status.textContent = "Signing in…";
+        if (status) status.textContent = "Signing in...";
         const submitButton = qs("#candidate-login-submit");
         if (submitButton) {
             submitButton.disabled = true;
-            submitButton.textContent = "Signing in…";
+            submitButton.textContent = "Signing in...";
         }
         try {
             const data = await apiRequest("/api/auth/login", {
@@ -1139,7 +1181,7 @@ function initLoginWizard() {
                 );
             }
             setSession(data.token, data.user);
-            if (status) status.textContent = "Success. Redirecting…";
+            if (status) status.textContent = "Success. Redirecting...";
             toast("Signed in successfully.");
             window.setTimeout(() => {
                 window.location.href = roleHomePage(data.user?.role || "candidate");
@@ -1167,18 +1209,18 @@ function initLoginWizard() {
             toast("Please enter admin ID and password.");
             return;
         }
-        const backendReady = await checkApiHealth();
-        if (!backendReady) {
-            const message = getBackendConnectionMessage();
+        const backendHealth = await checkApiHealth();
+        if (!backendHealth.ok) {
+            const message = getErrorMessage(backendHealth.error || getBackendConnectionMessage());
             if (status) status.textContent = message;
             toast(message);
             return;
         }
-        if (status) status.textContent = "Signing in…";
+        if (status) status.textContent = "Signing in...";
         const submitButton = qs("#admin-login-submit");
         if (submitButton) {
             submitButton.disabled = true;
-            submitButton.textContent = "Signing in…";
+            submitButton.textContent = "Signing in...";
         }
         try {
             const data = await apiRequest("/api/auth/login", {
@@ -1192,10 +1234,10 @@ function initLoginWizard() {
                 );
             }
             setSession(data.token, data.user);
-            if (status) status.textContent = "Success. Opening admin panel…";
+            if (status) status.textContent = "Success. Opening admin panel...";
             toast("Welcome, administrator.");
             window.setTimeout(() => {
-                window.location.href = roleHomePage(data.user?.role || "hr_admin");
+                window.location.href = "hr-dashboard.html";
             }, 400);
         } catch (error) {
             const msg = getErrorMessage(error);
@@ -1244,9 +1286,9 @@ function initAuthForms() {
                 return;
             }
 
-            const backendReady = await checkApiHealth();
-            if (!backendReady) {
-                const message = getBackendConnectionMessage();
+            const backendHealth = await checkApiHealth();
+            if (!backendHealth.ok) {
+                const message = getErrorMessage(backendHealth.error || getBackendConnectionMessage());
                 if (status) status.textContent = message;
                 toast(message);
                 return;
@@ -1312,8 +1354,10 @@ async function enforceRoleAccess() {
 
     const session = getSession();
     if (!session?.token) {
-        if (requiresCandidate || requiresAdmin) {
-            window.location.href = "login.html";
+        if (requiresAdmin) {
+            window.location.href = "login.html#admin";
+        } else if (requiresCandidate) {
+            window.location.href = "login.html#candidate";
         }
         return null;
     }
@@ -1322,8 +1366,10 @@ async function enforceRoleAccess() {
         const user = await fetchCurrentUser();
         if (!user) {
             clearSession();
-            if (requiresCandidate || requiresAdmin) {
-                window.location.href = "login.html";
+            if (requiresAdmin) {
+                window.location.href = "login.html#admin";
+            } else if (requiresCandidate) {
+                window.location.href = "login.html#candidate";
             }
             return null;
         }
@@ -1346,8 +1392,10 @@ async function enforceRoleAccess() {
         return user;
     } catch (error) {
         clearSession();
-        if (requiresCandidate || requiresAdmin) {
-            window.location.href = "login.html";
+        if (requiresAdmin) {
+            window.location.href = "login.html#admin";
+        } else if (requiresCandidate) {
+            window.location.href = "login.html#candidate";
         }
         return null;
     }
@@ -1393,3 +1441,4 @@ init().catch((error) => {
     console.error(error);
     toast(formatToastMessage(error));
 });
+
