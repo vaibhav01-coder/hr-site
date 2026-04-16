@@ -3,293 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Hiring Portal</title>
-    <meta name="description" content="Professional HR hiring portal with direct resume submission and candidate tracking.">
+    <title>HR Hiring Portal — Welcome</title>
+    <meta name="description" content="Professional HR hiring portal. Candidates apply for jobs, admins manage applications and resumes.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* ── Landing-specific overrides ── */
+        body { background: #0d0d12; color: #e8e8f0; min-height: 100vh; display: flex; flex-direction: column; }
+        .landing-shell { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; position: relative; overflow: hidden; }
+        .landing-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+        .landing-bg::before { content: ''; position: absolute; top: -200px; left: 50%; transform: translateX(-50%); width: 800px; height: 800px; background: radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%); }
+        .landing-bg::after { content: ''; position: absolute; bottom: -200px; right: -100px; width: 600px; height: 600px; background: radial-gradient(circle, rgba(167,139,250,0.12) 0%, transparent 70%); }
+        .landing-content { position: relative; z-index: 1; width: 100%; max-width: 900px; text-align: center; }
+        /* Brand */
+        .land-brand { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 48px; }
+        .land-brand-mark { width: 48px; height: 48px; background: linear-gradient(135deg, #6366f1, #a78bfa); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: #fff; letter-spacing: -0.5px; }
+        .land-brand-text { font-size: 20px; font-weight: 700; color: #f0f0ff; }
+        /* Headline */
+        .land-headline { font-size: clamp(32px, 5vw, 58px); font-weight: 900; line-height: 1.1; color: #f0f0ff; margin: 0 0 16px; letter-spacing: -1.5px; }
+        .land-headline span { background: linear-gradient(135deg, #6366f1, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .land-sub { font-size: 17px; color: #8b8ba7; margin: 0 0 60px; font-weight: 400; max-width: 480px; margin-left: auto; margin-right: auto; margin-bottom: 60px; }
+        /* Role cards */
+        .role-gateway { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; max-width: 720px; margin: 0 auto 40px; }
+        @media (max-width: 580px) { .role-gateway { grid-template-columns: 1fr; } }
+        .role-gate-card { background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 36px 30px; text-align: left; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; }
+        .role-gate-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(99,102,241,0.08), transparent); opacity: 0; transition: opacity 0.3s; }
+        .role-gate-card:hover { border-color: rgba(99,102,241,0.5); transform: translateY(-4px); box-shadow: 0 20px 60px rgba(99,102,241,0.15); }
+        .role-gate-card:hover::before { opacity: 1; }
+        .role-gate-card.admin-card:hover { border-color: rgba(167,139,250,0.5); box-shadow: 0 20px 60px rgba(167,139,250,0.15); }
+        .role-gate-card.admin-card::before { background: linear-gradient(135deg, rgba(167,139,250,0.08), transparent); }
+        .gate-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; font-size: 24px; }
+        .gate-icon.candidate-icon { background: rgba(99,102,241,0.15); }
+        .gate-icon.admin-icon { background: rgba(167,139,250,0.15); }
+        .gate-title { font-size: 22px; font-weight: 700; color: #f0f0ff; margin: 0 0 8px; }
+        .gate-desc { font-size: 14px; color: #8b8ba7; margin: 0 0 24px; line-height: 1.6; }
+        .gate-features { list-style: none; padding: 0; margin: 0 0 28px; display: flex; flex-direction: column; gap: 8px; }
+        .gate-features li { font-size: 13px; color: #a0a0b8; display: flex; align-items: center; gap: 8px; }
+        .gate-features li::before { content: '✓'; color: #6366f1; font-weight: 700; width: 16px; flex-shrink: 0; }
+        .admin-card .gate-features li::before { color: #a78bfa; }
+        .gate-cta { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #6366f1; transition: gap 0.2s; }
+        .admin-card .gate-cta { color: #a78bfa; }
+        .role-gate-card:hover .gate-cta { gap: 12px; }
+        /* Sub-options modal */
+        .candidate-options { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px; }
+        .candidate-options.visible { display: flex; }
+        .copt-box { background: #16161f; border: 1.5px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 40px; max-width: 480px; width: 100%; text-align: center; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .copt-title { font-size: 26px; font-weight: 800; color: #f0f0ff; margin: 0 0 10px; }
+        .copt-sub { font-size: 14px; color: #8b8ba7; margin: 0 0 32px; }
+        .copt-buttons { display: flex; flex-direction: column; gap: 14px; }
+        .copt-btn { display: flex; align-items: center; gap: 16px; padding: 18px 22px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); cursor: pointer; text-decoration: none; transition: all 0.2s; }
+        .copt-btn:hover { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.08); transform: translateX(4px); }
+        .copt-btn-icon { width: 42px; height: 42px; border-radius: 10px; background: rgba(99,102,241,0.15); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+        .copt-btn-text { text-align: left; }
+        .copt-btn-label { display: block; font-size: 15px; font-weight: 600; color: #f0f0ff; }
+        .copt-btn-hint { display: block; font-size: 12px; color: #8b8ba7; margin-top: 2px; }
+        .copt-close { margin-top: 24px; background: none; border: none; color: #8b8ba7; font-size: 14px; cursor: pointer; padding: 8px 16px; border-radius: 8px; transition: color 0.2s; }
+        .copt-close:hover { color: #e0e0f0; }
+        .land-footer { text-align: center; font-size: 12px; color: #6b6b80; margin-top: 48px; }
+        .land-footer a { color: #8b8ba7; text-decoration: none; }
+        .land-footer a:hover { color: #e0e0f0; }
+    </style>
 </head>
 <body data-page="home">
-    <div id="cookie-banner" class="cookie-banner">
-        <div class="container cookie-inner">
-            <p>We use only session cookies for login state and form flow.</p>
-            <button type="button" class="btn btn-primary btn-sm" id="accept-cookies">Accept</button>
+    <!-- Animated background -->
+    <div class="landing-bg"></div>
+
+    <main class="landing-shell">
+        <div class="landing-content">
+            <!-- Brand -->
+            <div class="land-brand">
+                <div class="land-brand-mark">HR</div>
+                <span class="land-brand-text">Hiring Portal</span>
+            </div>
+
+            <!-- Headline -->
+            <h1 class="land-headline">Who are you<span>?</span></h1>
+            <p class="land-sub">Choose your role to get started. Candidates browse and apply for jobs — Admins manage everything.</p>
+
+            <!-- Role Gateway Cards -->
+            <div class="role-gateway">
+                <!-- Candidate Card -->
+                <div class="role-gate-card" id="btn-candidate-entry" tabindex="0" role="button" aria-label="I am a candidate">
+                    <div class="gate-icon candidate-icon">🎯</div>
+                    <h2 class="gate-title">I'm a Candidate</h2>
+                    <p class="gate-desc">Looking for a job? Browse openings, apply, and track your application status.</p>
+                    <ul class="gate-features">
+                        <li>Browse active job listings</li>
+                        <li>Submit your resume & details</li>
+                        <li>Track application status</li>
+                    </ul>
+                    <span class="gate-cta">Get Started →</span>
+                </div>
+
+                <!-- Admin Card -->
+                <a class="role-gate-card admin-card" href="login.html#admin" id="btn-admin-entry" aria-label="I am an admin">
+                    <div class="gate-icon admin-icon">🛡️</div>
+                    <h2 class="gate-title">I'm an Admin</h2>
+                    <p class="gate-desc">HR team? Sign in with your admin credentials to manage jobs and candidates.</p>
+                    <ul class="gate-features">
+                        <li>Post & manage job listings</li>
+                        <li>Review applications & resumes</li>
+                        <li>Update candidate status</li>
+                    </ul>
+                    <span class="gate-cta">Admin Login →</span>
+                </a>
+            </div>
+
+            <p class="land-footer">
+                Admin credentials are shared privately by HR &nbsp;|&nbsp;
+                <a href="jobs.html">Browse public jobs without login</a>
+            </p>
         </div>
-    </div>
-
-    <div class="announcement-strip">
-        <div class="container announcement-inner">
-            <span>Premium hiring experience for growing teams</span>
-            <span>Direct applications, resume upload, and HR dashboard tracking</span>
-        </div>
-    </div>
-
-    <header class="site-header">
-        <div class="top-strip">
-            <div class="container top-strip-inner">
-                <span>HR Hiring Portal</span>
-                <span>Direct Application Flow</span>
-                <span>2026 Frontend Preview</span>
-            </div>
-        </div>
-        <div class="container nav-wrap">
-            <a class="brand" href="index.html">
-                <span class="brand-mark">HR</span>
-                <span class="brand-text">Hiring Portal</span>
-            </a>
-            <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">Menu</button>
-            <nav class="site-nav" id="site-nav">
-                <a href="index.html">Home</a>
-                <a href="jobs.html">Jobs</a>
-                <a href="dashboard.html">Dashboard</a>
-                <a href="hr-dashboard.html">HR Panel</a>
-                <a href="login.html">Login</a>
-                <a href="register.html" class="btn btn-primary btn-sm">Register</a>
-            </nav>
-        </div>
-    </header>
-
-    <main class="home-shell pro-home">
-        <section class="pro-hero">
-            <div class="container pro-hero-grid">
-                <div class="pro-hero-copy reveal">
-                    <span class="pro-badge">Professional hiring website</span>
-                    <h1>Modern hiring experience for serious companies and confident candidates.</h1>
-                    <p>Present jobs, posters, and applications in a cleaner way so the brand feels trusted and the hiring flow feels easy from the first visit to final resume submission.</p>
-                    <div class="pro-hero-actions">
-                        <a class="btn btn-primary" href="jobs.html">Explore Jobs</a>
-                        <a class="btn btn-outline" href="register.html">Create Candidate Account</a>
-                    </div>
-                    <div class="pro-hero-points">
-                        <div class="pro-point-card">
-                            <strong>Direct applications</strong>
-                            <span>Simple apply flow connected to registration resume and HR dashboard review.</span>
-                        </div>
-                        <div class="pro-point-card">
-                            <strong>Professional presentation</strong>
-                            <span>Cleaner sections, tighter spacing, and stronger visual hierarchy.</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pro-hero-panel reveal">
-                    <div class="pro-dashboard">
-                        <div class="pro-dashboard-top">
-                            <div>
-                                <span class="pro-label">Hiring Command Center</span>
-                                <strong>Today's activity</strong>
-                            </div>
-                            <span class="pro-status">Live</span>
-                        </div>
-                        <div class="pro-dashboard-metrics">
-                            <div class="pro-dashboard-metric">
-                                <strong>128</strong>
-                                <span>Applications</span>
-                            </div>
-                            <div class="pro-dashboard-metric">
-                                <strong>42</strong>
-                                <span>Interviews</span>
-                            </div>
-                            <div class="pro-dashboard-metric">
-                                <strong>09</strong>
-                                <span>Priority roles</span>
-                            </div>
-                        </div>
-                        <div class="pro-activity-list">
-                            <div class="pro-activity-row">
-                                <span class="pro-activity-dot"></span>
-                                <div>
-                                    <strong>Resume delivered to HR mail</strong>
-                                    <span>Applications go directly to your configured inbox.</span>
-                                </div>
-                            </div>
-                            <div class="pro-activity-row">
-                                <span class="pro-activity-dot"></span>
-                                <div>
-                                    <strong>Featured jobs refreshed</strong>
-                                    <span>Homepage stays aligned with the live listings experience.</span>
-                                </div>
-                            </div>
-                            <div class="pro-activity-row">
-                                <span class="pro-activity-dot"></span>
-                                <div>
-                                    <strong>Candidate flow simplified</strong>
-                                    <span>Jobs, posters, and application actions are easier to scan.</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="pro-trust-strip">
-            <div class="container pro-trust-grid reveal">
-                <div class="pro-trust-item">
-                    <strong>Fast onboarding</strong>
-                    <span>Clear candidate-first structure</span>
-                </div>
-                <div class="pro-trust-item">
-                    <strong>Resume upload</strong>
-                    <span>Supabase-backed application storage</span>
-                </div>
-                <div class="pro-trust-item">
-                    <strong>HR notifications</strong>
-                    <span>Direct admin review workflow</span>
-                </div>
-                <div class="pro-trust-item">
-                    <strong>Professional layout</strong>
-                    <span>Better balance, spacing, and framing</span>
-                </div>
-            </div>
-        </section>
-
-        <section class="section pro-poster-section">
-            <div class="container pro-section-head reveal">
-                <div>
-                    <span class="eyebrow">Poster Showcase</span>
-                    <h2>Latest recruitment posters and hiring announcements</h2>
-                </div>
-                <p>Browse current company hiring posters and direct joining opportunities from the homepage.</p>
-            </div>
-            <div class="container pro-poster-grid reveal">
-                <article class="pro-poster-card">
-                    <div class="pro-poster-frame">
-                        <img src="assets/hiring-campaign.jpeg" alt="Raicam hiring campaign — Sanand" class="pro-poster-image" width="600" height="800" loading="lazy">
-                    </div>
-                    <div class="pro-poster-meta">
-                        <span class="pro-tag">Raicam · Sanand</span>
-                        <h3>MNC job opportunity (Gujarat candidates)</h3>
-                        <p>Age 18–23 · Diploma/ITI · Stipend ₹21,000–₹23,000 · 8 hrs / 24 days · Interview dates announced on poster.</p>
-                        <a class="btn btn-primary btn-sm" href="jobs.html" style="margin-top:12px;display:inline-flex;">View jobs &amp; apply</a>
-                    </div>
-                </article>
-                <article class="pro-poster-card">
-                    <div class="pro-poster-frame">
-                        <img src="assets/hiring-campaign-2.jpeg" alt="Additional hiring announcement" class="pro-poster-image" width="600" height="800" loading="lazy">
-                    </div>
-                    <div class="pro-poster-meta">
-                        <span class="pro-tag">Raicam</span>
-                        <h3>More openings &amp; walk-in updates</h3>
-                        <p>Second campaign poster — documents and benefits are listed on the image; apply online for faster tracking.</p>
-                        <a class="btn btn-outline btn-sm" href="tel:+916351439792" style="margin-top:12px;display:inline-flex;">Call HR</a>
-                    </div>
-                </article>
-            </div>
-        </section>
-
-        <section class="section pro-jobs-section">
-            <div class="container pro-section-head reveal">
-                <div>
-                    <span class="eyebrow">Featured Jobs</span>
-                    <h2>Openings presented in a stronger, more polished homepage section</h2>
-                </div>
-                <p>The homepage keeps the live jobs visible while giving them better framing and visual rhythm.</p>
-            </div>
-            <div class="container">
-                <div id="featured-jobs" class="grid cards-grid"></div>
-            </div>
-        </section>
-
-        <section class="section pro-feature-section">
-            <div class="container pro-section-head reveal">
-                <div>
-                    <span class="eyebrow">Why It Works</span>
-                    <h2>A more professional structure for candidates and HR teams</h2>
-                </div>
-                <p>Each part of the homepage now has a clearer role, so the whole website feels more organized and more credible.</p>
-            </div>
-            <div class="container pro-feature-grid">
-                <article class="pro-feature-card reveal">
-                    <span class="feature-number">01</span>
-                    <h3>Clear first impression</h3>
-                    <p>The hero, cards, and image sections are more balanced and easier to understand at a glance.</p>
-                </article>
-                <article class="pro-feature-card reveal">
-                    <span class="feature-number">02</span>
-                    <h3>Better poster placement</h3>
-                    <p>Recruitment posters now sit inside a dedicated gallery section instead of dominating the screen.</p>
-                </article>
-                <article class="pro-feature-card reveal">
-                    <span class="feature-number">03</span>
-                    <h3>Stronger hiring flow</h3>
-                    <p>Candidates can move from homepage to job details to application submission with less friction.</p>
-                </article>
-            </div>
-        </section>
-
-        <section class="section pro-contact-section">
-            <div class="container pro-section-head reveal">
-                <div>
-                    <span class="eyebrow">HR Contact</span>
-                    <h2>Direct contact details for HR support and job queries</h2>
-                </div>
-                <p>If candidates need help before applying, they can contact HR directly by phone or email from the homepage.</p>
-            </div>
-            <div class="container pro-contact-grid reveal">
-                <article class="pro-contact-card">
-                    <span class="pro-label">HR Desk</span>
-                    <h3>Arvind Sir</h3>
-                    <p>Main contact for recruitment communication, candidate guidance, and application support.</p>
-                </article>
-                <article class="pro-contact-card">
-                    <span class="pro-label">Phone Number</span>
-                    <a class="pro-contact-link" href="tel:+916351439792">+91 63514 39792</a>
-                    <p>Available for job requirement details and application-related questions.</p>
-                </article>
-                <article class="pro-contact-card">
-                    <span class="pro-label">Email Address</span>
-                    <a class="pro-contact-link" href="mailto:arvinddamor1444@gmail.com">arvinddamor1444@gmail.com</a>
-                    <p>Resume notifications and direct HR communication are connected to this inbox.</p>
-                </article>
-            </div>
-        </section>
-
-        <section class="section">
-            <div class="container pro-cta reveal">
-                <div>
-                    <span class="eyebrow">Ready To Hire</span>
-                    <h2>Move candidates from interest to application with a cleaner and more trustworthy website.</h2>
-                    <p>The page is now focused on professionalism, clarity, and a layout that feels much closer to a real company website.</p>
-                </div>
-                <div class="banner-actions">
-                    <a class="btn btn-outline" href="privacy-policy.html">Privacy Policy</a>
-                    <a class="btn btn-primary" href="jobs.html">View Jobs</a>
-                </div>
-            </div>
-        </section>
     </main>
 
-    <footer class="site-footer">
-        <div class="container footer-grid pro-footer-grid">
-            <div>
-                <h3>HR Hiring Portal</h3>
-                <p>Professional hiring portal for job discovery, resume submission, and direct HR communication.</p>
+    <!-- Candidate sub-options overlay -->
+    <div class="candidate-options" id="candidate-options-overlay" role="dialog" aria-modal="true" aria-label="Candidate options">
+        <div class="copt-box">
+            <h2 class="copt-title">Welcome, Candidate 👋</h2>
+            <p class="copt-sub">Have you registered before, or is this your first time?</p>
+            <div class="copt-buttons">
+                <a class="copt-btn" href="login.html#candidate" id="copt-signin">
+                    <div class="copt-btn-icon">🔑</div>
+                    <div class="copt-btn-text">
+                        <span class="copt-btn-label">Already Registered? Sign In</span>
+                        <span class="copt-btn-hint">Use your email & password to continue</span>
+                    </div>
+                </a>
+                <a class="copt-btn" href="register.html" id="copt-register">
+                    <div class="copt-btn-icon">📝</div>
+                    <div class="copt-btn-text">
+                        <span class="copt-btn-label">New Here? Register Now</span>
+                        <span class="copt-btn-hint">Fill your details, upload resume & apply</span>
+                    </div>
+                </a>
             </div>
-            <div>
-                <h4>Explore</h4>
-                <a href="jobs.html">Jobs</a>
-                <a href="register.html">Register</a>
-                <a href="login.html">Login</a>
-            </div>
-            <div>
-                <h4>Platform</h4>
-                <a href="dashboard.html">Candidate Dashboard</a>
-                <a href="hr-dashboard.html">HR Panel</a>
-                <a href="application-policy.html">Application Policy</a>
-            </div>
-            <div>
-                <h4>Legal</h4>
-                <a href="privacy-policy.html">Privacy Policy</a>
-                <a href="terms-of-service.html">Terms of Service</a>
-                <a href="cookie-policy.html">Cookie Policy</a>
-            </div>
+            <button class="copt-close" id="copt-close-btn">↩ Go back</button>
         </div>
-    </footer>
+    </div>
 
-    <div id="toast-root" class="toast-root"></div>
-    <script src="api-config.js?v=20260412a"></script>
-    <script src="app.js?v=20260412a"></script>
+    <script>
+        const candidateBtn = document.getElementById('btn-candidate-entry');
+        const overlay = document.getElementById('candidate-options-overlay');
+        const closeBtn = document.getElementById('copt-close-btn');
+
+        function openOverlay() {
+            overlay.classList.add('visible');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeOverlay() {
+            overlay.classList.remove('visible');
+            document.body.style.overflow = '';
+        }
+
+        candidateBtn.addEventListener('click', openOverlay);
+        candidateBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') openOverlay(); });
+        closeBtn.addEventListener('click', closeOverlay);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) closeOverlay(); });
+
+        // Quick session check — if already logged in, redirect to right panel
+        try {
+            const raw = localStorage.getItem('hr_portal_session_v1');
+            if (raw) {
+                const session = JSON.parse(raw);
+                if (session?.token && session?.user?.role) {
+                    const dest = session.user.role === 'hr_admin' ? 'hr-dashboard.html' : 'dashboard.html';
+                    window.location.replace(dest);
+                }
+            }
+        } catch(e) {}
+    </script>
 </body>
 </html>

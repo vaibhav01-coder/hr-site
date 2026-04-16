@@ -447,13 +447,19 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const rawPath = (typeof req.url === "string" && req.url.length ? req.url.split("?")[0] : "/") || "/";
+    const rawPath = (typeof req.url === "string" && req.url.length ? req.url : "/") || "/";
     const host = String(req.headers["x-forwarded-host"] || req.headers.host || "localhost").split(",")[0].trim();
+    let requestUrl;
+    try {
+      requestUrl = new URL(rawPath, `https://${host}`);
+    } catch {
+      requestUrl = new URL("/", `https://${host}`);
+    }
     let pathname = "/";
     try {
-      pathname = new URL(rawPath, `https://${host}`).pathname || "/";
+      pathname = requestUrl.pathname || "/";
     } catch {
-      pathname = rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
+      pathname = "/";
     }
     pathname = (pathname || "/").replace(/\/+$/, "") || "/";
     const apiPath = pathname.startsWith("/api") ? (pathname.slice(4) || "/") : pathname;
@@ -627,7 +633,7 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === "GET" && apiPath === "/jobs") {
-      const includeInactive = url.searchParams.get("all") === "1";
+      const includeInactive = requestUrl.searchParams.get("all") === "1";
       if (includeInactive) {
         const auth = requireRole(req, res, "hr_admin");
         if (!auth) return;
@@ -645,7 +651,7 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === "GET" && apiPath.startsWith("/jobs/")) {
-      const includeInactive = url.searchParams.get("all") === "1";
+      const includeInactive = requestUrl.searchParams.get("all") === "1";
       if (includeInactive) {
         const auth = requireRole(req, res, "hr_admin");
         if (!auth) return;

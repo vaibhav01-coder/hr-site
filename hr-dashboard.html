@@ -60,12 +60,31 @@
                 <div id="hr-jobs-list" class="list-stack"></div>
             </section>
             <section class="tab-panel" id="hr-tab-applicants" role="tabpanel">
+                <div class="admin-filter-row surface">
+                    <label class="admin-filter-field" for="admin-applicant-search">
+                        <span>Search applicant</span>
+                        <input id="admin-applicant-search" type="search" placeholder="Name, email, phone, job title">
+                    </label>
+                    <label class="admin-filter-field admin-filter-select" for="admin-applicant-status">
+                        <span>Status</span>
+                        <select id="admin-applicant-status">
+                            <option value="all">All statuses</option>
+                            <option value="under_review">Under review</option>
+                            <option value="shortlisted">Shortlisted</option>
+                            <option value="hired">Hired</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </label>
+                    <div class="admin-filter-count" id="admin-applicant-result-count">0 applicants</div>
+                </div>
                 <div class="surface table-wrap">
                     <table class="table">
                         <thead>
                             <tr>
                                 <th>Candidate</th>
+                                <th>Contact</th>
                                 <th>Job</th>
+                                <th>Applied</th>
                                 <th>Status</th>
                                 <th>Resume</th>
                                 <th>Actions</th>
@@ -102,7 +121,7 @@
         </div>
     </main>
     <div id="toast-root" class="toast-root"></div>
-    <script src="api-config.js?v=20260412a"></script>
-    <script src="app.js?v=20260412a"></script>
+    <script src="api-config.js?v=20260416a"></script>
+    <script src="app.js?v=20260416a"></script>
 </body>
 </html>

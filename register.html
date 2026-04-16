@@ -4,60 +4,307 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register | HR Hiring Portal</title>
+    <meta name="description" content="Create your candidate account. Fill in all details and upload your resume to start applying for jobs.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        body { background: #0d0d12; min-height: 100vh; color: #e8e8f0; padding: 40px 20px; }
+        body::before { content: ''; position: fixed; top: -200px; left: 50%; transform: translateX(-50%); width: 800px; height: 600px; background: radial-gradient(circle, rgba(99,102,241,0.10) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+        .reg-wrap { position: relative; z-index: 1; width: 100%; max-width: 680px; margin: 0 auto; }
+        .reg-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; justify-content: center; }
+        .reg-brand-mark { width: 38px; height: 38px; background: linear-gradient(135deg, #6366f1, #a78bfa); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: #fff; }
+        .reg-brand-text { font-size: 17px; font-weight: 700; color: #f0f0ff; }
+        /* Progress steps */
+        .reg-stepper { display: flex; align-items: center; gap: 0; margin-bottom: 32px; background: rgba(255,255,255,0.04); border-radius: 14px; padding: 4px; }
+        .rstep { flex: 1; padding: 10px 8px; text-align: center; border-radius: 10px; font-size: 12px; font-weight: 600; color: #6b6b80; cursor: pointer; transition: all 0.2s; }
+        .rstep.active { background: rgba(99,102,241,0.2); color: #a78bfa; }
+        .rstep.done { color: #6366f1; }
+        .rstep-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 6px; vertical-align: middle; }
+        /* Panel */
+        .reg-panel { background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 40px; }
+        .reg-section { display: none; }
+        .reg-section.active { display: block; animation: fadeIn 0.25s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .reg-section-title { font-size: 22px; font-weight: 800; color: #f0f0ff; margin: 0 0 6px; }
+        .reg-section-sub { font-size: 14px; color: #8b8ba7; margin: 0 0 28px; }
+        /* Fields */
+        .reg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        @media (max-width: 560px) { .reg-grid { grid-template-columns: 1fr; } }
+        .reg-grid .full { grid-column: 1 / -1; }
+        .rfield { display: flex; flex-direction: column; gap: 8px; }
+        .rfield label { font-size: 13px; font-weight: 600; color: #c0c0d8; }
+        .rfield input, .rfield select, .rfield textarea {
+            background: rgba(255,255,255,0.05);
+            border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #f0f0ff;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .rfield select option { background: #1a1a28; }
+        .rfield input:focus, .rfield select:focus, .rfield textarea:focus {
+            border-color: rgba(99,102,241,0.6);
+            background: rgba(99,102,241,0.05);
+        }
+        .rfield input::placeholder, .rfield textarea::placeholder { color: #5a5a70; }
+        .rfield textarea { resize: vertical; }
+        /* File upload */
+        .resume-upload-zone {
+            border: 2px dashed rgba(255,255,255,0.12);
+            border-radius: 14px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(255,255,255,0.02);
+        }
+        .resume-upload-zone:hover { border-color: rgba(99,102,241,0.4); background: rgba(99,102,241,0.04); }
+        .resume-upload-zone.has-file { border-color: rgba(99,102,241,0.6); background: rgba(99,102,241,0.08); }
+        .upload-icon { font-size: 36px; margin-bottom: 12px; }
+        .upload-text { font-size: 15px; font-weight: 600; color: #c0c0d8; margin-bottom: 4px; }
+        .upload-hint { font-size: 12px; color: #6b6b80; }
+        .upload-filename { font-size: 13px; color: #a78bfa; font-weight: 600; margin-top: 8px; }
+        #register-resume { display: none; }
+        /* Nav buttons */
+        .reg-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 28px; }
+        .reg-nav-left { font-size: 13px; color: #8b8ba7; }
+        .reg-nav-left a { color: #a78bfa; text-decoration: none; }
+        .reg-btn-next, .reg-btn-prev, .reg-btn-submit {
+            padding: 13px 28px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: inherit; border: none;
+        }
+        .reg-btn-next, .reg-btn-submit { background: linear-gradient(135deg, #6366f1, #7c3aed); color: #fff; }
+        .reg-btn-next:hover, .reg-btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99,102,241,0.35); }
+        .reg-btn-prev { background: rgba(255,255,255,0.07); color: #c0c0d8; border: 1px solid rgba(255,255,255,0.12); }
+        .reg-btn-prev:hover { background: rgba(255,255,255,0.12); }
+        .reg-btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .reg-status { text-align: center; margin-top: 12px; font-size: 13px; color: #8b8ba7; min-height: 20px; }
+        .reg-status.error { color: #ef4444; }
+        /* Section labels */
+        .required-star { color: #ef4444; margin-left: 3px; }
+    </style>
 </head>
 <body data-page="register">
-    <main class="auth-shell">
-        <section class="surface auth-card auth-card-wide">
-            <span class="eyebrow">Candidate registration only</span>
-            <h1>Create your candidate account</h1>
-            <p>Administrators do not register here — they sign in with the Admin ID and password from HR. Candidates must complete all fields and upload a resume (PDF, DOC, or DOCX).</p>
-            <form id="register-form" class="auth-form">
-                <div class="field-grid">
-                    <label class="field"><span>Full Name *</span><input id="register-name" type="text" required></label>
-                    <label class="field"><span>Email Address *</span><input id="register-email" type="email" required></label>
-                    <label class="field"><span>Phone Number *</span><input id="register-phone" type="tel" required></label>
-                    <label class="field"><span>Password *</span><input id="register-password" type="password" minlength="6" required></label>
-                    <label class="field"><span>Date of Birth</span><input id="register-dob" type="date"></label>
-                    <label class="field">
-                        <span>Gender</span>
-                        <select id="register-gender">
-                            <option value="">Select</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </label>
-                    <label class="field">
-                        <span>Qualification</span>
-                        <select id="register-qualification">
-                            <option value="">Select qualification</option>
-                            <option>10th Pass</option>
-                            <option>12th Pass</option>
-                            <option>ITI</option>
-                            <option>Diploma</option>
-                            <option>Graduate</option>
-                            <option>Post Graduate</option>
-                        </select>
-                    </label>
-                    <label class="field"><span>Experience (Years)</span><input id="register-experience" type="number" min="0" max="25"></label>
-                    <label class="field"><span>Current Title</span><input id="register-current-title" type="text"></label>
-                    <label class="field"><span>LinkedIn URL</span><input id="register-linkedin" type="url"></label>
-                    <label class="field full"><span>Skills (comma separated)</span><input id="register-skills" type="text" placeholder="Machine Operation, Quality Check"></label>
-                    <label class="field full"><span>Address</span><textarea id="register-address" rows="3"></textarea></label>
-                    <label class="field full"><span>Resume Upload * (PDF/DOC/DOCX, max 5MB)</span><input id="register-resume" type="file" accept=".pdf,.doc,.docx" required></label>
+    <div class="reg-wrap">
+        <!-- Brand -->
+        <div class="reg-brand">
+            <div class="reg-brand-mark">HR</div>
+            <span class="reg-brand-text">Hiring Portal — Candidate Registration</span>
+        </div>
+
+        <!-- Progress stepper -->
+        <div class="reg-stepper" id="reg-stepper">
+            <div class="rstep active" data-step="0"><span class="rstep-dot"></span>Personal</div>
+            <div class="rstep" data-step="1"><span class="rstep-dot"></span>Professional</div>
+            <div class="rstep" data-step="2"><span class="rstep-dot"></span>Resume</div>
+        </div>
+
+        <div class="reg-panel">
+            <form id="register-form" enctype="multipart/form-data" novalidate>
+
+                <!-- SECTION 1: Personal -->
+                <div class="reg-section active" id="reg-s0">
+                    <h2 class="reg-section-title">Personal Details</h2>
+                    <p class="reg-section-sub">Tell us the basic info. Fields marked <span style="color:#ef4444">*</span> are required.</p>
+                    <div class="reg-grid">
+                        <div class="rfield">
+                            <label for="register-name">Full Name <span class="required-star">*</span></label>
+                            <input id="register-name" type="text" required placeholder="Rahul Sharma">
+                        </div>
+                        <div class="rfield">
+                            <label for="register-email">Email Address <span class="required-star">*</span></label>
+                            <input id="register-email" type="email" required autocomplete="email" placeholder="rahul@email.com">
+                        </div>
+                        <div class="rfield">
+                            <label for="register-phone">Phone Number <span class="required-star">*</span></label>
+                            <input id="register-phone" type="tel" required placeholder="+91 98765 43210">
+                        </div>
+                        <div class="rfield">
+                            <label for="register-password">Password <span class="required-star">*</span></label>
+                            <input id="register-password" type="password" minlength="6" required autocomplete="new-password" placeholder="Min. 6 characters">
+                        </div>
+                        <div class="rfield">
+                            <label for="register-dob">Date of Birth</label>
+                            <input id="register-dob" type="date">
+                        </div>
+                        <div class="rfield">
+                            <label for="register-gender">Gender</label>
+                            <select id="register-gender">
+                                <option value="">Select</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="rfield full">
+                            <label for="register-address">Address</label>
+                            <textarea id="register-address" rows="3" placeholder="Your current residential address"></textarea>
+                        </div>
+                    </div>
                 </div>
-                <button id="register-submit" type="submit" class="btn btn-primary full-width">Register</button>
+
+                <!-- SECTION 2: Professional -->
+                <div class="reg-section" id="reg-s1">
+                    <h2 class="reg-section-title">Professional Details</h2>
+                    <p class="reg-section-sub">Share your educational background and work experience.</p>
+                    <div class="reg-grid">
+                        <div class="rfield">
+                            <label for="register-qualification">Highest Qualification</label>
+                            <select id="register-qualification">
+                                <option value="">Select qualification</option>
+                                <option>10th Pass</option>
+                                <option>12th Pass</option>
+                                <option>ITI</option>
+                                <option>Diploma</option>
+                                <option>Graduate</option>
+                                <option>Post Graduate</option>
+                            </select>
+                        </div>
+                        <div class="rfield">
+                            <label for="register-experience">Experience (Years)</label>
+                            <input id="register-experience" type="number" min="0" max="40" placeholder="e.g. 2">
+                        </div>
+                        <div class="rfield">
+                            <label for="register-current-title">Current Job Title</label>
+                            <input id="register-current-title" type="text" placeholder="e.g. Machine Operator">
+                        </div>
+                        <div class="rfield">
+                            <label for="register-linkedin">LinkedIn URL</label>
+                            <input id="register-linkedin" type="url" placeholder="https://linkedin.com/in/...">
+                        </div>
+                        <div class="rfield full">
+                            <label for="register-skills">Skills <small style="color:#6b6b80;font-weight:400">(comma separated)</small></label>
+                            <input id="register-skills" type="text" placeholder="Machine Operation, Quality Check, Assembly">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: Resume Upload -->
+                <div class="reg-section" id="reg-s2">
+                    <h2 class="reg-section-title">Upload Your Resume</h2>
+                    <p class="reg-section-sub">Your resume is required to complete registration. Accepted formats: PDF, DOC, DOCX (max 5MB).</p>
+
+                    <div class="resume-upload-zone" id="upload-zone" tabindex="0" role="button" aria-label="Click to upload resume">
+                        <div class="upload-icon">📄</div>
+                        <div class="upload-text">Click to choose your resume or drag & drop</div>
+                        <div class="upload-hint">PDF, DOC, DOCX — Max 5MB</div>
+                        <div class="upload-filename" id="upload-filename" style="display:none"></div>
+                    </div>
+                    <input id="register-resume" type="file" accept=".pdf,.doc,.docx" required>
+
+                    <div style="margin-top:24px;padding:16px;background:rgba(99,102,241,0.08);border-radius:12px;border:1px solid rgba(99,102,241,0.2);">
+                        <p style="font-size:13px;color:#a0a0c0;margin:0;line-height:1.6">
+                            By registering, your resume and details will be submitted securely and reviewed only by our HR team.
+                            Your data is never shared with third parties.
+                        </p>
+                    </div>
+                </div>
+
             </form>
-            <p class="muted-line" id="register-status">Submit the form to create your account.</p>
-            <p class="muted-line">Already have an account? <a href="login.html">Login</a></p>
-        </section>
-    </main>
+
+            <!-- Navigation -->
+            <div class="reg-nav">
+                <div class="reg-nav-left">
+                    Already registered? <a href="login.html#candidate">Sign in</a>
+                </div>
+                <div style="display:flex;gap:10px;align-items:center">
+                    <button class="reg-btn-prev" id="reg-prev" type="button" style="display:none">← Back</button>
+                    <button class="reg-btn-next" id="reg-next" type="button">Continue →</button>
+                    <button class="reg-btn-submit" id="register-submit" type="button" style="display:none">Create Account 🎉</button>
+                </div>
+            </div>
+            <p class="reg-status" id="register-status"></p>
+        </div>
+    </div>
+
     <div id="toast-root" class="toast-root"></div>
-    <script src="api-config.js?v=20260412a"></script>
-    <script src="app.js?v=20260412a"></script>
+    <script src="api-config.js?v=20260416a"></script>
+    <script src="app.js?v=20260416a"></script>
+    <script>
+        // Multi-step navigation
+        let currentStep = 0;
+        const totalSteps = 3;
+        const sections = document.querySelectorAll('.reg-section');
+        const steppers = document.querySelectorAll('.rstep');
+        const prevBtn = document.getElementById('reg-prev');
+        const nextBtn = document.getElementById('reg-next');
+        const submitBtn = document.getElementById('register-submit');
+
+        function showStep(n) {
+            sections.forEach((s, i) => s.classList.toggle('active', i === n));
+            steppers.forEach((s, i) => {
+                s.classList.toggle('active', i === n);
+                s.classList.toggle('done', i < n);
+            });
+            prevBtn.style.display = n > 0 ? 'inline-block' : 'none';
+            nextBtn.style.display = n < totalSteps - 1 ? 'inline-block' : 'none';
+            submitBtn.style.display = n === totalSteps - 1 ? 'inline-block' : 'none';
+        }
+
+        function validateStep(n) {
+            if (n === 0) {
+                const name = document.getElementById('register-name').value.trim();
+                const email = document.getElementById('register-email').value.trim();
+                const phone = document.getElementById('register-phone').value.trim();
+                const pwd = document.getElementById('register-password').value;
+                if (!name) { alert('Please enter your full name.'); return false; }
+                if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Please enter a valid email.'); return false; }
+                if (!phone) { alert('Please enter your phone number.'); return false; }
+                if (!pwd || pwd.length < 6) { alert('Password must be at least 6 characters.'); return false; }
+            }
+            if (n === 2) {
+                const file = document.getElementById('register-resume').files[0];
+                if (!file) { alert('Please upload your resume to continue.'); return false; }
+            }
+            return true;
+        }
+
+        nextBtn.addEventListener('click', () => {
+            if (!validateStep(currentStep)) return;
+            if (currentStep < totalSteps - 1) { currentStep++; showStep(currentStep); }
+        });
+        prevBtn.addEventListener('click', () => {
+            if (currentStep > 0) { currentStep--; showStep(currentStep); }
+        });
+
+        // Resume upload zone
+        const uploadZone = document.getElementById('upload-zone');
+        const fileInput = document.getElementById('register-resume');
+        const uploadFilename = document.getElementById('upload-filename');
+
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+        uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.style.borderColor = 'rgba(99,102,241,0.6)'; });
+        uploadZone.addEventListener('dragleave', () => { uploadZone.style.borderColor = ''; });
+        uploadZone.addEventListener('drop', e => {
+            e.preventDefault();
+            const dt = e.dataTransfer;
+            if (dt.files[0]) { handleFile(dt.files[0]); }
+        });
+        fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+        function handleFile(file) {
+            const allowed = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            if (!allowed.includes(file.type) && !file.name.match(/\.(pdf|doc|docx)$/i)) {
+                alert('Please upload a PDF, DOC, or DOCX file.'); return;
+            }
+            if (file.size > 5 * 1024 * 1024) { alert('File size must be under 5MB.'); return; }
+            uploadZone.classList.add('has-file');
+            uploadFilename.style.display = 'block';
+            uploadFilename.textContent = '✓ ' + file.name;
+            // Transfer to input if drag-drop
+            if (fileInput.files.length === 0) {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+            }
+        }
+    </script>
 </body>
 </html>

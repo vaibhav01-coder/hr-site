@@ -109,19 +109,58 @@ function getAuthToken() {
     return getSession()?.token || "";
 }
 
-function formatToastMessage(input) {
-    if (input == null) return "Something went wrong.";
-    if (typeof input === "string") return input;
-    if (input instanceof Error) return input.message || "Something went wrong.";
-    if (typeof input === "object") {
-        if (typeof input.message === "string") return input.message;
-        try {
-            return JSON.stringify(input);
-        } catch {
-            return "Something went wrong.";
-        }
+function resolveReadableMessage(input, fallback = "Something went wrong.") {
+    if (input == null) return fallback;
+
+    if (typeof input === "string") {
+        const value = input.trim();
+        if (!value || value === "[object Object]") return fallback;
+        return value;
     }
-    return String(input);
+
+    if (input instanceof Error) {
+        const fromMessage = resolveReadableMessage(input.message, "");
+        if (fromMessage) return fromMessage;
+        if (input.cause !== undefined) {
+            const fromCause = resolveReadableMessage(input.cause, "");
+            if (fromCause) return fromCause;
+        }
+        return fallback;
+    }
+
+    if (Array.isArray(input)) {
+        const collected = input
+            .map((entry) => resolveReadableMessage(entry, ""))
+            .filter(Boolean);
+        return collected.length ? collected.join("; ") : fallback;
+    }
+
+    if (typeof input === "object") {
+        const keys = ["message", "detail", "error", "reason"];
+        for (const key of keys) {
+            if (Object.prototype.hasOwnProperty.call(input, key)) {
+                const nested = resolveReadableMessage(input[key], "");
+                if (nested) return nested;
+            }
+        }
+        try {
+            const serialized = JSON.stringify(input);
+            if (serialized && serialized !== "{}" && serialized !== "\"[object Object]\"") {
+                return serialized;
+            }
+        } catch {
+            return fallback;
+        }
+        return fallback;
+    }
+
+    const raw = String(input).trim();
+    if (!raw || raw === "[object Object]") return fallback;
+    return raw;
+}
+
+function formatToastMessage(input) {
+    return resolveReadableMessage(input, "Something went wrong.");
 }
 
 function toast(message) {
@@ -135,21 +174,15 @@ function toast(message) {
 }
 
 function apiErrorMessage(payload, httpStatus) {
-    if (!payload || typeof payload !== "object") {
-        return `Request failed (HTTP ${httpStatus}).`;
-    }
-    if (typeof payload.message === "string" && payload.message.trim()) return payload.message.trim();
-    if (typeof payload.detail === "string" && payload.detail.trim()) return payload.detail.trim();
-    const err = payload.error;
-    if (typeof err === "string" && err.trim()) return err.trim();
-    if (err && typeof err === "object" && typeof err.message === "string" && err.message.trim()) {
-        return err.message.trim();
-    }
-    try {
-        return JSON.stringify(payload);
-    } catch {
-        return `Request failed (HTTP ${httpStatus}).`;
-    }
+    const fallback = `Request failed (HTTP ${httpStatus}).`;
+    if (!payload || typeof payload !== "object") return fallback;
+    const fromDetail = resolveReadableMessage(payload.detail, "");
+    if (fromDetail) return fromDetail;
+    const fromMessage = resolveReadableMessage(payload.message, "");
+    if (fromMessage) return fromMessage;
+    const fromError = resolveReadableMessage(payload.error, "");
+    if (fromError) return fromError;
+    return resolveReadableMessage(payload, fallback);
 }
 
 function parseApiPayload(text, response) {
@@ -732,7 +765,10 @@ async function renderHrDashboard() {
     const jobsList = qs("#hr-jobs-list");
     const applicantRows = qs("#hr-applicant-rows");
     const createJobForm = qs("#create-job-form");
-    if (!jobsList && !applicantRows && !createJobForm) return;
+    const applicantSearch = qs("#admin-applicant-search");
+    const applicantStatus = qs("#admin-applicant-status");
+    const applicantResultCount = qs("#admin-applicant-result-count");
+    if (!jobsList && !applicantRows && !createJobForm && !applicantSearch && !applicantStatus) return;
 
     initHrTabs();
 
@@ -794,18 +830,60 @@ async function renderHrDashboard() {
             `).join("");
         }
 
-        if (applicantRows) {
-            applicantRows.innerHTML = applications.map((item) => {
+        const renderApplicantRows = () => {
+            if (!applicantRows) return;
+            const statusFilter = applicantStatus?.value || "all";
+            const searchTerm = (applicantSearch?.value || "").trim().toLowerCase();
+
+            const filteredApplications = applications.filter((item) => {
                 const profile = firstRelationObject(item.profiles);
                 const job = firstRelationObject(item.jobs);
+                if (statusFilter !== "all" && item.status !== statusFilter) return false;
+                if (!searchTerm) return true;
+
+                const searchableText = [
+                    profile?.full_name,
+                    profile?.email,
+                    profile?.phone,
+                    profile?.qualification,
+                    job?.title,
+                    job?.company_name,
+                    item.status
+                ].filter(Boolean).join(" ").toLowerCase();
+
+                return searchableText.includes(searchTerm);
+            });
+
+            if (applicantResultCount) {
+                const total = filteredApplications.length;
+                applicantResultCount.textContent = `${total} applicant${total === 1 ? "" : "s"}`;
+            }
+
+            if (!filteredApplications.length) {
+                applicantRows.innerHTML = `<tr><td colspan="7">No applicants match this filter.</td></tr>`;
+                return;
+            }
+
+            applicantRows.innerHTML = filteredApplications.map((item) => {
+                const profile = firstRelationObject(item.profiles);
+                const job = firstRelationObject(item.jobs);
+                const contact = [profile?.email, profile?.phone].filter(Boolean).join(" | ");
                 return `
                     <tr>
-                        <td>${escapeHtml(profile?.full_name || "Candidate")}</td>
-                        <td>${escapeHtml(job?.title || "Job")}</td>
-                        <td>${escapeHtml(formatStatus(item.status))}</td>
+                        <td>
+                            <strong>${escapeHtml(profile?.full_name || "Candidate")}</strong>
+                            <div class="muted-text">${escapeHtml(profile?.qualification || "Qualification not provided")}</div>
+                        </td>
+                        <td>${escapeHtml(contact || "N/A")}</td>
+                        <td>
+                            <strong>${escapeHtml(job?.title || "Job")}</strong>
+                            <div class="muted-text">${escapeHtml(job?.company_name || "Company")}</div>
+                        </td>
+                        <td>${escapeHtml(formatDate(item.created_at))}</td>
+                        <td><span class="status-pill">${escapeHtml(formatStatus(item.status))}</span></td>
                         <td>
                             ${profile?.resume_url
-                                ? `<a class="btn btn-outline btn-sm" href="${escapeHtml(profile.resume_url)}" target="_blank" rel="noopener noreferrer">Resume</a>`
+                                ? `<a class="btn btn-outline btn-sm" href="${escapeHtml(profile.resume_url)}" target="_blank" rel="noopener noreferrer">Open Resume</a>`
                                 : "<span class=\"muted-text\">No resume</span>"
                             }
                         </td>
@@ -816,6 +894,10 @@ async function renderHrDashboard() {
                     </tr>
                 `;
             }).join("");
+        };
+
+        if (applicantRows) {
+            renderApplicantRows();
 
             if (!applicantRows.dataset.boundStatusHandler) {
                 applicantRows.addEventListener("click", async (event) => {
@@ -846,6 +928,16 @@ async function renderHrDashboard() {
                 });
                 applicantRows.dataset.boundStatusHandler = "1";
             }
+        }
+
+        if (applicantSearch && !applicantSearch.dataset.boundFilterHandler) {
+            applicantSearch.addEventListener("input", renderApplicantRows);
+            applicantSearch.dataset.boundFilterHandler = "1";
+        }
+
+        if (applicantStatus && !applicantStatus.dataset.boundFilterHandler) {
+            applicantStatus.addEventListener("change", renderApplicantRows);
+            applicantStatus.dataset.boundFilterHandler = "1";
         }
 
         if (createJobForm) {
@@ -891,7 +983,7 @@ async function renderHrDashboard() {
                     } finally {
                         if (submitButton) {
                             submitButton.disabled = false;
-                            submitButton.textContent = "Post Job";
+                            submitButton.textContent = "Publish job";
                         }
                     }
                 });
@@ -903,7 +995,7 @@ async function renderHrDashboard() {
     } catch (error) {
         const msg = getErrorMessage(error);
         if (jobsList) jobsList.innerHTML = `<article class="surface"><p>${escapeHtml(msg)}</p></article>`;
-        if (applicantRows) applicantRows.innerHTML = `<tr><td colspan="5">${escapeHtml(msg)}</td></tr>`;
+        if (applicantRows) applicantRows.innerHTML = `<tr><td colspan="7">${escapeHtml(msg)}</td></tr>`;
         toast(msg);
     }
 }
@@ -954,7 +1046,7 @@ async function renderHrApplicants() {
             `;
         }).join("");
     } catch (error) {
-        rows.innerHTML = `<tr><td colspan="5">${escapeHtml(error.message)}</td></tr>`;
+        rows.innerHTML = `<tr><td colspan="5">${escapeHtml(getErrorMessage(error))}</td></tr>`;
     }
 }
 
@@ -969,7 +1061,6 @@ function initLogoutActions() {
 }
 
 function getErrorMessage(error) {
-    if (error instanceof Error) return error.message || "Something went wrong.";
     return formatToastMessage(error);
 }
 

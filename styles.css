@@ -1029,6 +1029,51 @@ body[data-page="hr-applicants"] .surface {
 }
 .admin-welcome h2 { margin: 0; font-size: 20px; color: var(--navy); }
 .admin-welcome p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.admin-filter-row {
+    display: grid;
+    grid-template-columns: minmax(240px, 1.6fr) minmax(180px, .8fr) auto;
+    gap: 12px;
+    align-items: end;
+    margin-bottom: 14px;
+    padding: 14px;
+}
+.admin-filter-field { display: grid; gap: 6px; }
+.admin-filter-field span {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    font-weight: 800;
+}
+.admin-filter-field input,
+.admin-filter-field select {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px 10px;
+    color: var(--text);
+    background: linear-gradient(180deg, #ffffff, #f5f8fc);
+}
+.admin-filter-field input:focus,
+.admin-filter-field select:focus {
+    outline: none;
+    border-color: rgba(27, 77, 143, .45);
+    box-shadow: 0 0 0 3px rgba(27, 77, 143, .12);
+}
+.admin-filter-count {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--white);
+    color: var(--navy);
+    font-weight: 700;
+    white-space: nowrap;
+}
 
 .legal-list { padding-left: 18px; margin: 18px 0 24px; }
 .role-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 14px 0 16px; }
@@ -1372,6 +1417,8 @@ body[data-page="hr-applicants"] .surface {
     .pro-section-head { align-items: start; }
     .pro-section-head h2,
     .pro-hero-copy h1 { max-width: none; }
+    .admin-filter-row { grid-template-columns: 1fr 1fr; }
+    .admin-filter-count { justify-content: flex-start; }
 }
 
 @media (max-width: 760px) {
@@ -1401,4 +1448,5 @@ body[data-page="hr-applicants"] .surface {
     .pro-cta .btn { width: 100%; }
     .pro-poster-frame { min-height: 250px; }
     .pro-poster-image { height: 210px; max-width: 100%; }
+    .admin-filter-row { grid-template-columns: 1fr; }
 }
