@@ -37,25 +37,34 @@ function getApiBaseCandidates() {
         : "http:";
     const host = window.location.hostname || "localhost";
     const isLocalHost = isLikelyLocalHost(host);
-    const locationOrigin = window.location.origin.replace(/\/+$/, "");
+    const rawOrigin = String(window.location.origin || "");
+    const locationOrigin = rawOrigin && rawOrigin !== "null"
+        ? rawOrigin.replace(/\/+$/, "")
+        : "";
     const configuredBase = getApiBaseUrl();
     const candidates = [];
 
     if (isLocalHost) {
         const localBase = `${protocol}//${host}:4000`;
         candidates.push(localBase);
-        if (configuredBase && configuredBase !== localBase) {
+        // Also try same-origin for setups like `vercel dev` or integrated API servers.
+        if (locationOrigin && locationOrigin !== localBase) {
+            candidates.push(locationOrigin);
+        }
+        if (configuredBase && configuredBase !== localBase && configuredBase !== locationOrigin) {
             candidates.push(configuredBase);
         }
         return [...new Set(candidates)];
     }
 
     // On deployed domains, always prefer same-origin API first.
-    candidates.push(locationOrigin);
+    if (locationOrigin) {
+        candidates.push(locationOrigin);
+    }
     if (configuredBase && configuredBase !== locationOrigin) {
         candidates.push(configuredBase);
     }
-    return [...new Set(candidates)];
+    return [...new Set(candidates.filter(Boolean))];
 }
 
 function getApiPathCandidates(path) {
@@ -1156,13 +1165,6 @@ function initLoginWizard() {
             toast("Please enter email and password.");
             return;
         }
-        const backendHealth = await checkApiHealth();
-        if (!backendHealth.ok) {
-            const message = getErrorMessage(backendHealth.error || getBackendConnectionMessage());
-            if (status) status.textContent = message;
-            toast(message);
-            return;
-        }
         if (status) status.textContent = "Signing in...";
         const submitButton = qs("#candidate-login-submit");
         if (submitButton) {
@@ -1207,13 +1209,6 @@ function initLoginWizard() {
         if (!identifier || !password) {
             if (status) status.textContent = "Please enter admin ID and password.";
             toast("Please enter admin ID and password.");
-            return;
-        }
-        const backendHealth = await checkApiHealth();
-        if (!backendHealth.ok) {
-            const message = getErrorMessage(backendHealth.error || getBackendConnectionMessage());
-            if (status) status.textContent = message;
-            toast(message);
             return;
         }
         if (status) status.textContent = "Signing in...";
@@ -1283,14 +1278,6 @@ function initAuthForms() {
             if (resumeFile.size > MAX_RESUME_SIZE) {
                 if (status) status.textContent = "Resume must be 5MB or smaller.";
                 toast("Resume must be 5MB or smaller.");
-                return;
-            }
-
-            const backendHealth = await checkApiHealth();
-            if (!backendHealth.ok) {
-                const message = getErrorMessage(backendHealth.error || getBackendConnectionMessage());
-                if (status) status.textContent = message;
-                toast(message);
                 return;
             }
 
