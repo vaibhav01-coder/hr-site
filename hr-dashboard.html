@@ -22,26 +22,38 @@
     </header>
     <main class="section">
         <div class="container">
-            <div class="admin-welcome">
+            <div class="admin-welcome admin-welcome-pro">
                 <div>
                     <p class="eyebrow" style="margin-bottom:6px;">Administrator</p>
                     <h2 id="admin-welcome-heading">HR control center</h2>
                     <p id="admin-welcome-line">Manage job listings, incoming applications, and candidate status.</p>
                 </div>
+                <div class="admin-welcome-actions">
+                    <a class="btn btn-outline btn-sm" href="jobs.html">View public jobs</a>
+                    <button type="button" class="btn btn-primary btn-sm" data-hr-tab-jump="create">Post new job</button>
+                </div>
             </div>
 
             <div class="admin-stats" aria-live="polite">
-                <div class="admin-stat">
-                    <strong id="admin-stat-jobs">—</strong>
+                <div class="admin-stat" data-kind="jobs">
+                    <strong id="admin-stat-jobs">-</strong>
                     <span>Job listings</span>
                 </div>
-                <div class="admin-stat">
-                    <strong id="admin-stat-apps">—</strong>
+                <div class="admin-stat" data-kind="applications">
+                    <strong id="admin-stat-apps">-</strong>
                     <span>Total applications</span>
                 </div>
-                <div class="admin-stat">
-                    <strong id="admin-stat-pending">—</strong>
+                <div class="admin-stat" data-kind="pending">
+                    <strong id="admin-stat-pending">-</strong>
                     <span>Under review</span>
+                </div>
+                <div class="admin-stat" data-kind="shortlisted">
+                    <strong id="admin-stat-shortlisted">-</strong>
+                    <span>Shortlisted</span>
+                </div>
+                <div class="admin-stat" data-kind="closed">
+                    <strong id="admin-stat-closed">-</strong>
+                    <span>Closed</span>
                 </div>
             </div>
 
@@ -125,3 +137,4 @@
     <script src="app.js?v=20260416a"></script>
 </body>
 </html>
+

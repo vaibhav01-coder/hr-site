@@ -739,13 +739,23 @@ async function renderCandidateDashboard(currentUser) {
 function initHrTabs() {
     const tabs = qsa("[data-hr-tab]");
     if (!tabs.length) return;
+
+    const activateTab = (tabKey) => {
+        if (!tabKey) return;
+        tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.hrTab === tabKey));
+        qsa(".tab-panel").forEach((panel) => panel.classList.toggle("active", panel.id === `hr-tab-${tabKey}`));
+    };
+
     tabs.forEach((button) => {
-        button.addEventListener("click", () => {
-            tabs.forEach((tab) => tab.classList.remove("active"));
-            qsa(".tab-panel").forEach((panel) => panel.classList.remove("active"));
-            button.classList.add("active");
-            qs(`#hr-tab-${button.dataset.hrTab}`)?.classList.add("active");
-        });
+        if (button.dataset.boundHrTab === "1") return;
+        button.addEventListener("click", () => activateTab(button.dataset.hrTab || ""));
+        button.dataset.boundHrTab = "1";
+    });
+
+    qsa("[data-hr-tab-jump]").forEach((button) => {
+        if (button.dataset.boundHrTabJump === "1") return;
+        button.addEventListener("click", () => activateTab(button.getAttribute("data-hr-tab-jump") || ""));
+        button.dataset.boundHrTabJump = "1";
     });
 }
 
@@ -796,12 +806,18 @@ async function renderHrDashboard() {
         }
 
         const pendingReview = applications.filter((a) => a.status === "under_review").length;
+        const shortlistedCount = applications.filter((a) => a.status === "shortlisted").length;
+        const closedCount = applications.filter((a) => a.status === "hired" || a.status === "rejected").length;
         const statJobs = qs("#admin-stat-jobs");
         const statApps = qs("#admin-stat-apps");
         const statPending = qs("#admin-stat-pending");
+        const statShortlisted = qs("#admin-stat-shortlisted");
+        const statClosed = qs("#admin-stat-closed");
         if (statJobs) statJobs.textContent = String(jobs.length);
         if (statApps) statApps.textContent = String(applications.length);
         if (statPending) statPending.textContent = String(pendingReview);
+        if (statShortlisted) statShortlisted.textContent = String(shortlistedCount);
+        if (statClosed) statClosed.textContent = String(closedCount);
 
         const countByJobId = new Map();
         applications.forEach((item) => {

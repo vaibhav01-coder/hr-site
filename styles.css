@@ -1012,9 +1012,24 @@ body[data-page="hr-applicants"] .surface {
     border-radius: 16px;
     padding: 16px 18px;
     box-shadow: var(--shadow-soft);
+    position: relative;
+    overflow: hidden;
 }
 .admin-stat strong { display: block; font-size: 26px; font-family: var(--font-display); color: var(--navy); letter-spacing: -0.03em; }
 .admin-stat span { font-size: 13px; color: var(--muted); font-weight: 600; }
+.admin-stat::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    height: 4px;
+    background: rgba(18, 48, 91, 0.24);
+}
+.admin-stat[data-kind="jobs"]::before { background: linear-gradient(90deg, #12305b, #2b63ac); }
+.admin-stat[data-kind="applications"]::before { background: linear-gradient(90deg, #7d4b00, #c58b1b); }
+.admin-stat[data-kind="pending"]::before { background: linear-gradient(90deg, #1d4f8f, #3a88ea); }
+.admin-stat[data-kind="shortlisted"]::before { background: linear-gradient(90deg, #197242, #25a65f); }
+.admin-stat[data-kind="closed"]::before { background: linear-gradient(90deg, #6d2a8e, #9d52c5); }
 .admin-welcome {
     display: flex;
     flex-wrap: wrap;
@@ -1029,6 +1044,18 @@ body[data-page="hr-applicants"] .surface {
 }
 .admin-welcome h2 { margin: 0; font-size: 20px; color: var(--navy); }
 .admin-welcome p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.admin-welcome-pro {
+    background:
+        radial-gradient(circle at top right, rgba(255, 191, 71, 0.22), transparent 46%),
+        linear-gradient(130deg, rgba(18, 48, 91, 0.09), rgba(18, 48, 91, 0.03));
+    box-shadow: 0 16px 34px rgba(18, 48, 91, 0.12);
+}
+.admin-welcome-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
 .admin-filter-row {
     display: grid;
     grid-template-columns: minmax(240px, 1.6fr) minmax(180px, .8fr) auto;
@@ -1417,6 +1444,7 @@ body[data-page="hr-applicants"] .surface {
     .pro-section-head { align-items: start; }
     .pro-section-head h2,
     .pro-hero-copy h1 { max-width: none; }
+    .admin-welcome-actions { width: 100%; justify-content: flex-start; }
     .admin-filter-row { grid-template-columns: 1fr 1fr; }
     .admin-filter-count { justify-content: flex-start; }
 }
