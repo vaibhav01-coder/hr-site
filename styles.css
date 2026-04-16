@@ -2447,3 +2447,336 @@ p {
         min-width: 640px;
     }
 }
+
+/* Final Pro Polish (2026-04-16g) */
+:root {
+    --radius: 16px;
+    --line: #d4deeb;
+    --text: #0b1628;
+    --muted: #5c6f86;
+    --navy: #15406f;
+    --navy-dark: #0f3156;
+}
+
+body {
+    background:
+        radial-gradient(circle at 15% 0%, rgba(20, 63, 112, 0.07), transparent 30%),
+        radial-gradient(circle at 85% 5%, rgba(32, 91, 157, 0.05), transparent 26%),
+        linear-gradient(180deg, #f9fbff 0%, #f3f7fc 48%, #f6f8fc 100%) !important;
+}
+
+.surface,
+.card,
+.job-list-card,
+.role-card,
+.app-card,
+.stat-box {
+    border-radius: var(--radius) !important;
+}
+
+.hpro-hero,
+.hpro-page-banner {
+    border: 1px solid #d9e3ef !important;
+    box-shadow: 0 10px 28px rgba(12, 26, 44, 0.06) !important;
+}
+
+.hpro-hero-media,
+.hpro-image-card,
+.hpro-page-banner-media {
+    min-height: 300px;
+    background: #f5f8fc !important;
+    border: 1px solid #d7e1ee !important;
+}
+
+.hpro-hero-media img,
+.hpro-image-card img,
+.hpro-page-banner-media img {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 420px !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    padding: 8px !important;
+}
+
+.hpro-auth-media {
+    background: #f5f8fc !important;
+}
+
+.hpro-auth-media img {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 360px !important;
+    object-fit: contain !important;
+    object-position: center !important;
+}
+
+.hero-actions {
+    gap: 10px !important;
+}
+
+.table th,
+.table td {
+    white-space: nowrap;
+}
+
+@media (max-width: 1024px) {
+    .hpro-hero-media,
+    .hpro-image-card,
+    .hpro-page-banner-media {
+        min-height: 240px;
+    }
+
+    .hpro-hero-media img,
+    .hpro-image-card img,
+    .hpro-page-banner-media img {
+        max-height: 320px !important;
+    }
+}
+
+@media (max-width: 760px) {
+    .site-nav {
+        gap: 6px !important;
+        flex-wrap: wrap !important;
+        white-space: normal !important;
+        overflow: visible !important;
+    }
+
+    .site-nav a,
+    .site-nav .btn {
+        flex: 1 1 auto;
+        text-align: center;
+    }
+
+    .hpro-hero-media,
+    .hpro-image-card,
+    .hpro-page-banner-media {
+        min-height: 190px;
+    }
+
+    .hpro-hero-media img,
+    .hpro-image-card img,
+    .hpro-page-banner-media img,
+    .hpro-auth-media img {
+        max-height: 250px !important;
+        padding: 6px !important;
+    }
+
+    .table th,
+    .table td {
+        white-space: normal;
+    }
+}
+
+/* Friendly Motion Pack (2026-04-16h) */
+@keyframes hproFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes hproSoftFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+.reveal {
+    opacity: 0 !important;
+    transform: translateY(10px) !important;
+    transition: opacity 0.45s ease, transform 0.45s ease !important;
+}
+
+.reveal.in-view {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+}
+
+.btn {
+    position: relative;
+    overflow: hidden;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.25s ease,
+        filter 0.2s ease,
+        background-color 0.25s ease,
+        border-color 0.25s ease !important;
+}
+
+.btn::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 70%;
+    height: 100%;
+    background: linear-gradient(110deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+    transition: left 0.55s ease;
+    pointer-events: none;
+}
+
+.btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 14px 24px rgba(14, 30, 49, 0.12) !important;
+}
+
+.btn:hover::after {
+    left: 150%;
+}
+
+.btn:active {
+    transform: translateY(0) scale(0.99) !important;
+}
+
+.btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(32, 89, 151, 0.28) !important;
+}
+
+.site-nav a:not(.btn) {
+    position: relative;
+    transition:
+        color 0.25s ease,
+        background-color 0.25s ease,
+        border-color 0.25s ease,
+        transform 0.2s ease !important;
+}
+
+.site-nav a:not(.btn)::after {
+    content: "";
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 6px;
+    height: 2px;
+    background: #20558f;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s ease;
+    border-radius: 999px;
+}
+
+.site-nav a:not(.btn):hover {
+    transform: translateY(-1px) !important;
+}
+
+.site-nav a:not(.btn):hover::after,
+.site-nav a:not(.btn):focus-visible::after {
+    transform: scaleX(1);
+}
+
+.surface,
+.card,
+.job-list-card,
+.role-card,
+.app-card,
+.stat-box,
+.hpro-kpi-card,
+.admin-stat,
+.admin-welcome {
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.3s ease,
+        border-color 0.25s ease !important;
+}
+
+.card:hover,
+.job-list-card:hover,
+.role-card:hover,
+.app-card:hover,
+.stat-box:hover,
+.hpro-kpi-card:hover {
+    transform: translateY(-3px);
+    border-color: #c5d4e7 !important;
+    box-shadow: 0 16px 30px rgba(12, 28, 47, 0.1) !important;
+}
+
+.hpro-hero-media img,
+.hpro-image-card img,
+.hpro-page-banner-media img {
+    transition: transform 0.6s ease, filter 0.3s ease !important;
+    animation: hproSoftFloat 6s ease-in-out infinite;
+}
+
+.hpro-hero-media:hover img,
+.hpro-image-card:hover img,
+.hpro-page-banner-media:hover img {
+    transform: scale(1.02);
+    filter: saturate(1.05);
+}
+
+.field input,
+.field select,
+.field textarea,
+.search-input,
+.status-select,
+.tab,
+.chip {
+    transition:
+        border-color 0.25s ease,
+        background-color 0.25s ease,
+        box-shadow 0.25s ease,
+        transform 0.2s ease !important;
+}
+
+.tab:hover,
+.chip:hover {
+    transform: translateY(-1px);
+    border-color: #bacde4 !important;
+}
+
+.table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background: #f7fbff;
+}
+
+.hpro-hero,
+.hpro-page-banner,
+.page-head,
+.section-head,
+.toolbar,
+.auth-card {
+    animation: hproFadeUp 0.5s ease both;
+}
+
+@media (max-width: 760px) {
+    .btn:hover {
+        transform: none !important;
+    }
+
+    .card:hover,
+    .job-list-card:hover,
+    .role-card:hover,
+    .app-card:hover,
+    .stat-box:hover,
+    .hpro-kpi-card:hover {
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+
+    .reveal,
+    .reveal.in-view {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}
