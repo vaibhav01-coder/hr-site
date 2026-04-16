@@ -9,11 +9,666 @@ const AUTH_PAGES = new Set(["login", "register"]);
 const MAX_RESUME_SIZE = 5 * 1024 * 1024;
 const ALLOWED_RESUME_EXTENSIONS = [".pdf", ".doc", ".docx"];
 const STATUS_OPTIONS = ["under_review", "shortlisted", "hired", "rejected"];
+const OFFLINE_DB_KEY = "hr_portal_offline_db_v1";
+const OFFLINE_MODE_KEY = "hr_portal_offline_mode_v1";
+const DEFAULT_ADMIN_LOGIN_ID = "admin";
+const DEFAULT_ADMIN_LOGIN_PASSWORD = "admin123";
 
 const jobCache = {
     active: null,
     all: null
 };
+
+let offlineDbMemory = null;
+let offlineModeMemory = false;
+let offlineToastShown = false;
+
+function storageGet(key) {
+    try {
+        return localStorage.getItem(key);
+    } catch {
+        return null;
+    }
+}
+
+function storageSet(key, value) {
+    try {
+        localStorage.setItem(key, value);
+    } catch {
+        // Ignore storage write failures (private mode / blocked storage).
+    }
+}
+
+function generateId() {
+    if (window.crypto?.randomUUID) {
+        return window.crypto.randomUUID();
+    }
+    return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function parseSkillsInput(rawValue) {
+    if (!rawValue) return [];
+    if (Array.isArray(rawValue)) {
+        return rawValue.map((value) => String(value).trim()).filter(Boolean);
+    }
+    return String(rawValue)
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+}
+
+function parseNumberInput(rawValue) {
+    if (rawValue === undefined || rawValue === null || rawValue === "") return null;
+    const value = Number(rawValue);
+    return Number.isFinite(value) ? value : null;
+}
+
+function normalizeGenderValue(rawValue) {
+    if (!rawValue) return null;
+    const value = String(rawValue).trim().toLowerCase();
+    if (!["male", "female", "other"].includes(value)) return null;
+    return value;
+}
+
+function mapOfflineUser(user) {
+    if (!user) return null;
+    return {
+        id: user.id,
+        full_name: user.full_name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        role: user.role || "candidate",
+        dob: user.dob || null,
+        gender: user.gender || null,
+        address: user.address || null,
+        qualification: user.qualification || null,
+        experience_years: user.experience_years ?? null,
+        current_title: user.current_title || null,
+        skills: Array.isArray(user.skills) ? user.skills : [],
+        linkedin_url: user.linkedin_url || null,
+        resume_path: user.resume_path || null,
+        resume_url: user.resume_url || null,
+        created_at: user.created_at || null
+    };
+}
+
+function defaultOfflineJobs() {
+    const now = new Date().toISOString();
+    return [
+        {
+            id: generateId(),
+            title: "Production Operator",
+            company_name: "Raicam Industries",
+            description: "Operate production lines and maintain output targets.",
+            department: "Production",
+            location: "Sanand, Gujarat",
+            job_type: "full_time",
+            salary_range: "Rs. 16,000 - Rs. 22,000",
+            skills_required: ["Machine Operation", "Quality Check", "Assembly"],
+            perks: "Bus, canteen, attendance incentives",
+            is_active: true,
+            created_at: now
+        },
+        {
+            id: generateId(),
+            title: "Quality Inspector",
+            company_name: "Raicam Industries",
+            description: "Inspect materials and finished goods, maintain quality reports.",
+            department: "Quality",
+            location: "Ahmedabad, Gujarat",
+            job_type: "full_time",
+            salary_range: "Rs. 18,000 - Rs. 24,000",
+            skills_required: ["Inspection", "Documentation", "Measurement Tools"],
+            perks: "Canteen, transport, uniform",
+            is_active: true,
+            created_at: now
+        },
+        {
+            id: generateId(),
+            title: "Warehouse Assistant",
+            company_name: "Prime Logistics",
+            description: "Handle inventory, dispatch, and warehouse operations.",
+            department: "Operations",
+            location: "Sanand, Gujarat",
+            job_type: "contract",
+            salary_range: "Rs. 14,000 - Rs. 18,000",
+            skills_required: ["Inventory", "Packing", "Dispatch"],
+            perks: "Night allowance, shift meal",
+            is_active: true,
+            created_at: now
+        }
+    ];
+}
+
+function createDefaultOfflineDb() {
+    return {
+        users: [],
+        jobs: defaultOfflineJobs(),
+        applications: [],
+        tokens: {}
+    };
+}
+
+function readOfflineDb() {
+    if (offlineDbMemory) return offlineDbMemory;
+    const raw = storageGet(OFFLINE_DB_KEY);
+    if (!raw) {
+        offlineDbMemory = createDefaultOfflineDb();
+        storageSet(OFFLINE_DB_KEY, JSON.stringify(offlineDbMemory));
+        return offlineDbMemory;
+    }
+    try {
+        const parsed = JSON.parse(raw);
+        offlineDbMemory = {
+            users: Array.isArray(parsed.users) ? parsed.users : [],
+            jobs: Array.isArray(parsed.jobs) ? parsed.jobs : defaultOfflineJobs(),
+            applications: Array.isArray(parsed.applications) ? parsed.applications : [],
+            tokens: parsed.tokens && typeof parsed.tokens === "object" ? parsed.tokens : {}
+        };
+        return offlineDbMemory;
+    } catch {
+        offlineDbMemory = createDefaultOfflineDb();
+        storageSet(OFFLINE_DB_KEY, JSON.stringify(offlineDbMemory));
+        return offlineDbMemory;
+    }
+}
+
+function writeOfflineDb(db) {
+    offlineDbMemory = db;
+    storageSet(OFFLINE_DB_KEY, JSON.stringify(db));
+}
+
+function isOfflineModeEnabled() {
+    return offlineModeMemory || storageGet(OFFLINE_MODE_KEY) === "1";
+}
+
+function setOfflineModeEnabled(enabled) {
+    offlineModeMemory = Boolean(enabled);
+    storageSet(OFFLINE_MODE_KEY, enabled ? "1" : "0");
+}
+
+function normalizeRequestPath(path) {
+    const value = String(path || "");
+    return value.startsWith("/") ? value : `/${value}`;
+}
+
+function supportsOfflinePath(path) {
+    const url = new URL(normalizeRequestPath(path), "https://offline.local");
+    let routePath = url.pathname;
+    if (routePath.startsWith("/api/")) {
+        routePath = routePath.slice(4);
+    }
+    if (!routePath.startsWith("/")) {
+        routePath = `/${routePath}`;
+    }
+    return (
+        routePath === "/health" ||
+        routePath === "/auth/register" ||
+        routePath === "/auth/login" ||
+        routePath === "/auth/me" ||
+        routePath === "/jobs" ||
+        /^\/jobs\/[^/]+$/.test(routePath) ||
+        routePath === "/applications" ||
+        routePath === "/applications/my" ||
+        routePath === "/admin/applications" ||
+        /^\/admin\/applications\/[^/]+\/status$/.test(routePath)
+    );
+}
+
+function isMissingApiRouteMessage(message) {
+    const value = String(message || "").toLowerCase();
+    if (!value) return false;
+    return (
+        value.includes("route not found") ||
+        value.includes("the page could not be found") ||
+        value.includes("server returned html instead of json") ||
+        value.includes("backend api route was not found") ||
+        /cannot\s+(get|post|patch|put|delete)\s+\/api/.test(value)
+    );
+}
+
+function toPayloadFromFormData(formData) {
+    if (!(formData instanceof FormData)) return {};
+    const payload = {};
+    for (const [key, value] of formData.entries()) {
+        payload[key] = value;
+    }
+    return payload;
+}
+
+function getOfflineAuth(db, headers) {
+    const authHeader = String(headers?.Authorization || headers?.authorization || "");
+    if (!authHeader.startsWith("Bearer ")) return null;
+    const token = authHeader.slice("Bearer ".length).trim();
+    if (!token) return null;
+    return db.tokens?.[token] || null;
+}
+
+async function offlineApiRequest(path, options = {}) {
+    const {
+        method = "GET",
+        body,
+        formData,
+        auth = true,
+        headers = {}
+    } = options;
+
+    const requestUrl = new URL(normalizeRequestPath(path), "https://offline.local");
+    let routePath = requestUrl.pathname;
+    if (routePath.startsWith("/api/")) {
+        routePath = routePath.slice(4);
+    }
+    if (!routePath.startsWith("/")) {
+        routePath = `/${routePath}`;
+    }
+
+    const payload = formData ? toPayloadFromFormData(formData) : (body || {});
+    const db = readOfflineDb();
+    const authUser = getOfflineAuth(db, headers);
+    const methodUpper = String(method || "GET").toUpperCase();
+
+    if (auth && !authUser) {
+        throw new Error("Please sign in first.");
+    }
+
+    if (methodUpper === "GET" && routePath === "/health") {
+        return {
+            ok: true,
+            mode: "offline",
+            message: "Frontend offline API mode is active."
+        };
+    }
+
+    if (methodUpper === "POST" && routePath === "/auth/register") {
+        const fullName = String(payload.full_name || "").trim();
+        const email = String(payload.email || "").trim().toLowerCase();
+        const phone = String(payload.phone || "").trim();
+        const password = String(payload.password || "");
+        const resumeFile = payload.resume || null;
+
+        if (!fullName || !email || !phone || !password) {
+            throw new Error("Full name, email, phone, and password are required.");
+        }
+        if (!resumeFile) {
+            throw new Error("Resume is required during registration.");
+        }
+        const existing = db.users.find((item) => String(item.email || "").toLowerCase() === email);
+        if (existing) {
+            throw new Error("Email is already registered.");
+        }
+
+        const resumeName = typeof resumeFile === "object" && resumeFile?.name
+            ? String(resumeFile.name)
+            : "resume.pdf";
+        const userId = generateId();
+        const normalizedGender = payload.gender ? normalizeGenderValue(payload.gender) : null;
+        if (payload.gender && !normalizedGender) {
+            throw new Error("Gender must be male, female, or other.");
+        }
+
+        const user = {
+            id: userId,
+            full_name: fullName,
+            email,
+            phone,
+            password,
+            role: "candidate",
+            dob: payload.dob || null,
+            gender: normalizedGender,
+            address: payload.address || null,
+            qualification: payload.qualification || null,
+            experience_years: parseNumberInput(payload.experience_years),
+            current_title: payload.current_title || null,
+            skills: parseSkillsInput(payload.skills),
+            linkedin_url: payload.linkedin_url || null,
+            resume_path: `offline/resumes/${resumeName}`,
+            resume_url: `offline://resumes/${encodeURIComponent(resumeName)}`,
+            created_at: new Date().toISOString()
+        };
+
+        db.users.push(user);
+        writeOfflineDb(db);
+
+        return {
+            message: "Registration completed successfully.",
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role
+            }
+        };
+    }
+
+    if (methodUpper === "POST" && routePath === "/auth/login") {
+        const role = String(payload.role || "").trim().toLowerCase();
+        const identifier = String(payload.identifier || "").trim();
+        const password = String(payload.password || "");
+
+        if (!role || !identifier || !password) {
+            throw new Error("Role, login ID, and password are required.");
+        }
+
+        if (!["candidate", "hr_admin"].includes(role)) {
+            throw new Error("Invalid login role.");
+        }
+
+        if (role === "hr_admin") {
+            const adminId = storageGet("hr_admin_login_id") || DEFAULT_ADMIN_LOGIN_ID;
+            const adminPassword = storageGet("hr_admin_login_password") || DEFAULT_ADMIN_LOGIN_PASSWORD;
+            if (identifier !== adminId || password !== adminPassword) {
+                throw new Error("Invalid admin ID or password.");
+            }
+
+            const token = `offline-${generateId()}`;
+            db.tokens[token] = {
+                id: "local-admin",
+                role: "hr_admin",
+                email: identifier,
+                full_name: "Admin",
+                localAdmin: true
+            };
+            writeOfflineDb(db);
+
+            return {
+                message: "Admin login successful.",
+                token,
+                user: {
+                    id: "local-admin",
+                    email: identifier,
+                    full_name: "Admin",
+                    role: "hr_admin"
+                }
+            };
+        }
+
+        const user = db.users.find((item) => {
+            const emailMatch = String(item.email || "").toLowerCase() === identifier.toLowerCase();
+            return emailMatch && item.password === password;
+        });
+        if (!user) {
+            throw new Error("Invalid login credentials.");
+        }
+        if (user.role === "hr_admin") {
+            throw new Error("This account is admin. Use admin login option.");
+        }
+
+        const token = `offline-${generateId()}`;
+        db.tokens[token] = {
+            id: user.id,
+            role: user.role || "candidate",
+            email: user.email,
+            full_name: user.full_name || ""
+        };
+        writeOfflineDb(db);
+
+        return {
+            message: "Login successful.",
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                full_name: user.full_name || "",
+                role: user.role || "candidate"
+            }
+        };
+    }
+
+    if (methodUpper === "GET" && routePath === "/auth/me") {
+        if (!authUser) throw new Error("Please sign in first.");
+        if (authUser.localAdmin || authUser.role === "hr_admin") {
+            return {
+                user: {
+                    id: "local-admin",
+                    email: authUser.email || "",
+                    full_name: "Admin",
+                    role: "hr_admin"
+                }
+            };
+        }
+        const user = db.users.find((item) => item.id === authUser.id);
+        if (!user) {
+            throw new Error("Profile not found.");
+        }
+        return { user: mapOfflineUser(user) };
+    }
+
+    if (methodUpper === "GET" && routePath === "/jobs") {
+        const includeInactive = requestUrl.searchParams.get("all") === "1";
+        if (includeInactive && authUser?.role !== "hr_admin") {
+            throw new Error("Admin access required for inactive jobs.");
+        }
+        const jobs = db.jobs
+            .filter((item) => includeInactive || item.is_active !== false)
+            .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")))
+            .map((item) => ({
+                ...item,
+                company_name: item.company_name || "Company"
+            }));
+        return { jobs };
+    }
+
+    if (methodUpper === "GET" && /^\/jobs\/[^/]+$/.test(routePath)) {
+        const includeInactive = requestUrl.searchParams.get("all") === "1";
+        const jobId = decodeURIComponent(routePath.slice("/jobs/".length));
+        const job = db.jobs.find((item) => item.id === jobId);
+        if (!job) {
+            throw new Error("Job not found.");
+        }
+        if (!includeInactive && job.is_active === false) {
+            throw new Error("Job is not active.");
+        }
+        return {
+            job: {
+                ...job,
+                company_name: job.company_name || "Company"
+            }
+        };
+    }
+
+    if (methodUpper === "POST" && routePath === "/jobs") {
+        if (authUser?.role !== "hr_admin") {
+            throw new Error("You do not have permission to perform this action.");
+        }
+        const title = String(payload.title || "").trim();
+        const location = String(payload.location || "").trim();
+        if (!title || !location) {
+            throw new Error("Title and location are required.");
+        }
+
+        const job = {
+            id: generateId(),
+            title,
+            description: payload.description || null,
+            department: payload.department || null,
+            location,
+            job_type: payload.job_type || "full_time",
+            salary_range: payload.salary_range || null,
+            skills_required: parseSkillsInput(payload.skills_required),
+            perks: payload.perks || null,
+            company_name: payload.company_name || "Raicam Industries",
+            is_active: true,
+            created_at: new Date().toISOString()
+        };
+
+        db.jobs.unshift(job);
+        writeOfflineDb(db);
+        return {
+            message: "Job created.",
+            job
+        };
+    }
+
+    if (methodUpper === "POST" && routePath === "/applications") {
+        if (authUser?.role !== "candidate") {
+            throw new Error("You do not have permission to perform this action.");
+        }
+        const jobId = String(payload.job_id || "");
+        if (!jobId) {
+            throw new Error("Job ID is required.");
+        }
+        const user = db.users.find((item) => item.id === authUser.id);
+        if (!user) {
+            throw new Error("Candidate profile not found.");
+        }
+        const job = db.jobs.find((item) => item.id === jobId && item.is_active !== false);
+        if (!job) {
+            throw new Error("Selected job is not available.");
+        }
+        const existing = db.applications.find((item) => item.candidate_id === authUser.id && item.job_id === jobId);
+        if (existing) {
+            throw new Error("You have already applied for this job.");
+        }
+
+        if (payload.full_name) user.full_name = String(payload.full_name).trim();
+        if (payload.phone) user.phone = String(payload.phone).trim();
+        if (payload.dob) user.dob = payload.dob;
+        if (payload.gender) {
+            const normalized = normalizeGenderValue(payload.gender);
+            if (!normalized) {
+                throw new Error("Gender must be male, female, or other.");
+            }
+            user.gender = normalized;
+        }
+        if (payload.address) user.address = String(payload.address).trim();
+        if (payload.qualification) user.qualification = String(payload.qualification).trim();
+        if (payload.experience_years !== undefined && payload.experience_years !== null && payload.experience_years !== "") {
+            const years = parseNumberInput(payload.experience_years);
+            if (years === null) {
+                throw new Error("Experience years must be a valid number.");
+            }
+            user.experience_years = years;
+        }
+        if (payload.current_title) user.current_title = String(payload.current_title).trim();
+        if (payload.skills) user.skills = parseSkillsInput(payload.skills);
+        if (payload.linkedin_url) user.linkedin_url = String(payload.linkedin_url).trim();
+
+        const application = {
+            id: generateId(),
+            candidate_id: authUser.id,
+            job_id: jobId,
+            dob: user.dob || null,
+            gender: user.gender || null,
+            address: user.address || null,
+            qualification: user.qualification || null,
+            experience_years: parseNumberInput(user.experience_years),
+            current_title: user.current_title || null,
+            skills: parseSkillsInput(user.skills),
+            resume_url: user.resume_url || null,
+            cover_letter: payload.cover_letter || null,
+            linkedin_url: user.linkedin_url || null,
+            status: "under_review",
+            created_at: new Date().toISOString()
+        };
+
+        db.applications.unshift(application);
+        writeOfflineDb(db);
+
+        return {
+            message: "Application submitted successfully.",
+            application: {
+                id: application.id,
+                status: application.status,
+                created_at: application.created_at
+            }
+        };
+    }
+
+    if (methodUpper === "GET" && routePath === "/applications/my") {
+        if (authUser?.role !== "candidate") {
+            throw new Error("You do not have permission to perform this action.");
+        }
+        const applications = db.applications
+            .filter((item) => item.candidate_id === authUser.id)
+            .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")))
+            .map((item) => {
+                const job = db.jobs.find((jobItem) => jobItem.id === item.job_id) || null;
+                return {
+                    id: item.id,
+                    status: item.status,
+                    created_at: item.created_at,
+                    job_id: item.job_id,
+                    jobs: job
+                        ? {
+                            id: job.id,
+                            title: job.title,
+                            company_name: job.company_name || "Company",
+                            location: job.location || null,
+                            job_type: job.job_type || null,
+                            salary_range: job.salary_range || null
+                        }
+                        : null
+                };
+            });
+        return { applications };
+    }
+
+    if (methodUpper === "GET" && routePath === "/admin/applications") {
+        if (authUser?.role !== "hr_admin") {
+            throw new Error("You do not have permission to perform this action.");
+        }
+        const applications = db.applications
+            .slice()
+            .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")))
+            .map((item) => {
+                const profile = db.users.find((userItem) => userItem.id === item.candidate_id) || null;
+                const job = db.jobs.find((jobItem) => jobItem.id === item.job_id) || null;
+                return {
+                    id: item.id,
+                    status: item.status,
+                    created_at: item.created_at,
+                    candidate_id: item.candidate_id,
+                    job_id: item.job_id,
+                    profiles: profile
+                        ? {
+                            full_name: profile.full_name || null,
+                            phone: profile.phone || null,
+                            email: profile.email || null,
+                            resume_url: profile.resume_url || null,
+                            resume_path: profile.resume_path || null,
+                            qualification: profile.qualification || null,
+                            experience_years: profile.experience_years ?? null
+                        }
+                        : null,
+                    jobs: job
+                        ? {
+                            id: job.id,
+                            title: job.title,
+                            company_name: job.company_name || "Company",
+                            location: job.location || null,
+                            job_type: job.job_type || null
+                        }
+                        : null
+                };
+            });
+        return { applications };
+    }
+
+    if (methodUpper === "PATCH" && /^\/admin\/applications\/[^/]+\/status$/.test(routePath)) {
+        if (authUser?.role !== "hr_admin") {
+            throw new Error("You do not have permission to perform this action.");
+        }
+        const applicationId = decodeURIComponent(routePath.slice("/admin/applications/".length, -"/status".length));
+        const status = String(payload.status || "");
+        if (!STATUS_OPTIONS.includes(status)) {
+            throw new Error("Invalid application status.");
+        }
+        const target = db.applications.find((item) => item.id === applicationId);
+        if (!target) {
+            throw new Error("Application not found.");
+        }
+        target.status = status;
+        writeOfflineDb(db);
+        return {
+            message: "Application status updated.",
+            application: {
+                id: target.id,
+                status: target.status
+            }
+        };
+    }
+
+    throw new Error("Route not found.");
+}
 
 function getApiBaseUrl() {
     return (window.HR_API_CONFIG?.baseUrl || "http://localhost:4000").replace(/\/+$/, "");
@@ -260,6 +915,16 @@ async function apiRequest(path, options = {}) {
         requestBody = JSON.stringify(body);
     }
 
+    if (isOfflineModeEnabled() && supportsOfflinePath(path)) {
+        return offlineApiRequest(path, {
+            method,
+            body,
+            formData,
+            auth,
+            headers
+        });
+    }
+
     const baseCandidates = getApiBaseCandidates();
     const pathCandidates = getApiPathCandidates(path);
     let lastNetworkError = null;
@@ -300,6 +965,28 @@ async function apiRequest(path, options = {}) {
                 lastNetworkError = error;
             }
         }
+    }
+
+    const shouldTryOffline =
+        supportsOfflinePath(path) &&
+        (
+            Boolean(lastNetworkError) ||
+            ((lastHttpStatus === 404 || lastHttpStatus === 405) && isMissingApiRouteMessage(lastHttpMessage))
+        );
+
+    if (shouldTryOffline) {
+        setOfflineModeEnabled(true);
+        if (!offlineToastShown) {
+            offlineToastShown = true;
+            toast("Backend not reachable. Switched to offline mode.");
+        }
+        return offlineApiRequest(path, {
+            method,
+            body,
+            formData,
+            auth,
+            headers
+        });
     }
 
     if (lastHttpMessage) {
