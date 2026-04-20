@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260416h">
+    <link rel="stylesheet" href="styles.css?v=20260420a">
 </head>
 <body data-page="login">
     <main class="auth-shell">
@@ -16,11 +16,17 @@
             <section class="surface auth-card auth-flow-card">
                 <div id="auth-step-role" class="auth-step">
                     <span class="eyebrow">Sign In</span>
-                    <h1>Select your role</h1>
-                    <p class="auth-lead">Continue as candidate or admin to access the correct dashboard.</p>
+                    <h1>Welcome back</h1>
+                    <p class="auth-lead">Choose your workspace to continue with secure access.</p>
                     <div class="role-choice-grid">
-                        <button type="button" class="role-choice-btn" id="btn-choose-candidate">Candidate</button>
-                        <button type="button" class="role-choice-btn" id="btn-choose-admin">Administrator</button>
+                        <button type="button" class="role-choice-btn" id="btn-choose-candidate">
+                            <strong>Candidate</strong>
+                            <span>Track applications and apply for jobs</span>
+                        </button>
+                        <button type="button" class="role-choice-btn" id="btn-choose-admin">
+                            <strong>Administrator</strong>
+                            <span>Review applicants and manage job posts</span>
+                        </button>
                     </div>
                     <p class="muted-line"><a href="index.html">Back to home</a></p>
                 </div>
@@ -28,7 +34,7 @@
                 <div id="auth-step-candidate" class="auth-step is-hidden">
                     <button type="button" class="text-back" id="btn-back-candidate">Back to role selection</button>
                     <h2>Candidate Sign In</h2>
-                    <p class="auth-lead">Use your registered email and password.</p>
+                    <p class="auth-lead">Use your registered email and password to continue.</p>
                     <form id="candidate-login-form" class="auth-form" autocomplete="on">
                         <label class="field">
                             <span>Email Address</span>
@@ -47,10 +53,10 @@
                 <div id="auth-step-admin" class="auth-step is-hidden">
                     <button type="button" class="text-back" id="btn-back-admin">Back to role selection</button>
                     <h2>Admin Sign In</h2>
-                    <p class="auth-lead">Enter admin ID and password shared by HR.</p>
+                    <p class="auth-lead">Enter admin credentials shared by HR.</p>
                     <form id="admin-login-form" class="auth-form" autocomplete="on">
                         <label class="field">
-                            <span>Admin ID</span>
+                            <span>Admin ID or Email</span>
                             <input id="admin-id" type="text" name="adminId" autocomplete="username" required>
                         </label>
                         <label class="field">
@@ -60,6 +66,7 @@
                         <button type="submit" class="btn btn-primary full-width" id="admin-login-submit">Sign in to admin panel</button>
                     </form>
                     <p class="login-status-line" id="login-status-admin"></p>
+                    <p class="muted-line">Use admin email directly, or ask HR for mapped admin ID.</p>
                     <p class="muted-line">Candidate account? <a href="login.html#candidate">Sign in as candidate</a></p>
                 </div>
             </section>
@@ -68,6 +75,11 @@
                 <div class="hpro-auth-media-copy">
                     <h3>Professional hiring workflow</h3>
                     <p>Secure sign in for candidates and HR admins with dedicated dashboards and structured application management.</p>
+                    <ul class="auth-media-points">
+                        <li>Static frontend connected directly to Supabase</li>
+                        <li>Real-time application visibility for HR</li>
+                        <li>Responsive on mobile, tablet, and desktop</li>
+                    </ul>
                 </div>
             </aside>
         </div>
@@ -75,7 +87,12 @@
 
     <div id="toast-root" class="toast-root"></div>
     <script src="api-config.js?v=20260416h"></script>
-    <script src="app.js?v=20260416h"></script>
+    <script src="supabase-config.js?v=20260420a"></script>
+    <script src="app.js?v=20260420a"></script>
 </body>
 </html>
+
+
+
+
 

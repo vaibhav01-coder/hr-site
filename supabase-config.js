@@ -4,6 +4,11 @@ window.HR_SUPABASE_CONFIG = {
 };
 
 window.HR_APPLICATION_CONFIG = {
-    notifyEndpoint: "http://localhost:3000/api/applications/notify-hr",
     resumesBucket: "resumes"
+};
+
+window.HR_ADMIN_AUTH = {
+    loginId: "admin",
+    // Set this to your Supabase admin user's email if admin signs in with short ID above.
+    email: ""
 };

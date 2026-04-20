@@ -108,7 +108,22 @@ create policy "profiles_self_update"
 on public.profiles
 for update
 to authenticated
-using (auth.uid() = id);
+using (auth.uid() = id)
+with check (auth.uid() = id);
+
+drop policy if exists "profiles_admin_select" on public.profiles;
+create policy "profiles_admin_select"
+on public.profiles
+for select
+to authenticated
+using (
+    exists (
+        select 1
+        from public.profiles p
+        where p.id = auth.uid()
+          and p.role = 'hr_admin'
+    )
+);
 
 drop policy if exists "jobs_public_read" on public.jobs;
 create policy "jobs_public_read"
@@ -116,6 +131,56 @@ on public.jobs
 for select
 to anon, authenticated
 using (is_active = true);
+
+drop policy if exists "jobs_admin_select_all" on public.jobs;
+create policy "jobs_admin_select_all"
+on public.jobs
+for select
+to authenticated
+using (
+    exists (
+        select 1
+        from public.profiles p
+        where p.id = auth.uid()
+          and p.role = 'hr_admin'
+    )
+);
+
+drop policy if exists "jobs_admin_insert" on public.jobs;
+create policy "jobs_admin_insert"
+on public.jobs
+for insert
+to authenticated
+with check (
+    exists (
+        select 1
+        from public.profiles p
+        where p.id = auth.uid()
+          and p.role = 'hr_admin'
+    )
+);
+
+drop policy if exists "jobs_admin_update" on public.jobs;
+create policy "jobs_admin_update"
+on public.jobs
+for update
+to authenticated
+using (
+    exists (
+        select 1
+        from public.profiles p
+        where p.id = auth.uid()
+          and p.role = 'hr_admin'
+    )
+)
+with check (
+    exists (
+        select 1
+        from public.profiles p
+        where p.id = auth.uid()
+          and p.role = 'hr_admin'
+    )
+);
 
 drop policy if exists "applications_self_select" on public.applications;
 create policy "applications_self_select"
@@ -131,75 +196,41 @@ for insert
 to authenticated
 with check (candidate_id = auth.uid());
 
-insert into public.jobs (
-    title,
-    company_name,
-    description,
-    department,
-    location,
-    job_type,
-    salary_range,
-    skills_required,
-    perks
-)
-select * from (
-    values
-    (
-        'Production Operator',
-        'Raicam Industries',
-        'Operate production lines and maintain output targets.',
-        'Production',
-        'Sanand, Gujarat',
-        'full_time',
-        'Rs. 16,000 - Rs. 22,000',
-        array['Machine Operation', 'Quality Check', 'Assembly'],
-        'Bus, canteen, attendance incentives'
-    ),
-    (
-        'Quality Inspector',
-        'Raicam Industries',
-        'Inspect materials and finished goods, maintain quality reports.',
-        'Quality',
-        'Ahmedabad, Gujarat',
-        'full_time',
-        'Rs. 18,000 - Rs. 24,000',
-        array['Inspection', 'Documentation', 'Measurement Tools'],
-        'Canteen, transport, uniform'
-    ),
-    (
-        'Warehouse Assistant',
-        'Prime Logistics',
-        'Handle inventory, dispatch, and warehouse operations.',
-        'Operations',
-        'Sanand, Gujarat',
-        'contract',
-        'Rs. 14,000 - Rs. 18,000',
-        array['Inventory', 'Packing', 'Dispatch'],
-        'Night allowance, shift meal'
-    ),
-    (
-        'HR Executive',
-        'Talent Edge',
-        'Support recruitment and onboarding operations.',
-        'Human Resources',
-        'Remote / Ahmedabad',
-        'part_time',
-        'Rs. 20,000 - Rs. 28,000',
-        array['Recruitment', 'Screening', 'Communication'],
-        'Hybrid work, flexible hours'
+drop policy if exists "applications_admin_select" on public.applications;
+create policy "applications_admin_select"
+on public.applications
+for select
+to authenticated
+using (
+    exists (
+        select 1
+        from public.profiles p
+        where p.id = auth.uid()
+          and p.role = 'hr_admin'
     )
-) as sample_jobs (
-    title,
-    company_name,
-    description,
-    department,
-    location,
-    job_type,
-    salary_range,
-    skills_required,
-    perks
+);
+
+drop policy if exists "applications_admin_update" on public.applications;
+create policy "applications_admin_update"
+on public.applications
+for update
+to authenticated
+using (
+    exists (
+        select 1
+        from public.profiles p
+        where p.id = auth.uid()
+          and p.role = 'hr_admin'
+    )
 )
-where not exists (select 1 from public.jobs);
+with check (
+    exists (
+        select 1
+        from public.profiles p
+        where p.id = auth.uid()
+          and p.role = 'hr_admin'
+    )
+);
 
 insert into storage.buckets (id, name, public)
 values ('resumes', 'resumes', false)
@@ -226,3 +257,41 @@ using (
     and (storage.foldername(name))[1] = 'profiles'
     and (storage.foldername(name))[2] = auth.uid()::text
 );
+
+drop policy if exists "resume_read_admin" on storage.objects;
+create policy "resume_read_admin"
+on storage.objects
+for select
+to authenticated
+using (
+    bucket_id = 'resumes'
+    and exists (
+        select 1
+        from public.profiles p
+        where p.id = auth.uid()
+          and p.role = 'hr_admin'
+    )
+);
+
+do $$
+begin
+    if not exists (
+        select 1
+        from pg_publication_tables
+        where pubname = 'supabase_realtime'
+          and schemaname = 'public'
+          and tablename = 'applications'
+    ) then
+        execute 'alter publication supabase_realtime add table public.applications';
+    end if;
+
+    if not exists (
+        select 1
+        from pg_publication_tables
+        where pubname = 'supabase_realtime'
+          and schemaname = 'public'
+          and tablename = 'jobs'
+    ) then
+        execute 'alter publication supabase_realtime add table public.jobs';
+    end if;
+end $$;

@@ -13,6 +13,8 @@ const OFFLINE_DB_KEY = "hr_portal_offline_db_v1";
 const OFFLINE_MODE_KEY = "hr_portal_offline_mode_v1";
 const DEFAULT_ADMIN_LOGIN_ID = "admin";
 const DEFAULT_ADMIN_LOGIN_PASSWORD = "admin123";
+const DEFAULT_RESUMES_BUCKET = "resumes";
+const SUPABASE_JS_CDN = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 
 const jobCache = {
     active: null,
@@ -22,6 +24,10 @@ const jobCache = {
 let offlineDbMemory = null;
 let offlineModeMemory = false;
 let offlineToastShown = false;
+let supabaseClientPromise = null;
+let hrRealtimeChannel = null;
+let hrRealtimeRefreshTimer = null;
+let hrRealtimeUnloadBound = false;
 
 function storageGet(key) {
     try {
@@ -776,14 +782,22 @@ function getSession() {
         if (!raw) return null;
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== "object" || !parsed.token) return null;
+        if (!parsed.auth_provider) {
+            parsed.auth_provider = "supabase";
+        }
         return parsed;
     } catch (error) {
         return null;
     }
 }
 
-function setSession(token, user) {
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ token, user }));
+function setSession(token, user, refreshToken = "", authProvider = "supabase") {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+        token,
+        user,
+        refresh_token: refreshToken || "",
+        auth_provider: authProvider
+    }));
 }
 
 function clearSession() {
@@ -890,7 +904,277 @@ function parseApiPayload(text, response) {
     }
 }
 
-async function apiRequest(path, options = {}) {
+function getSupabaseConfig() {
+    const config = window.HR_SUPABASE_CONFIG || {};
+    return {
+        url: String(config.url || "").trim(),
+        anonKey: String(config.anonKey || "").trim()
+    };
+}
+
+function getResumesBucket() {
+    const fromAppConfig = String(window.HR_APPLICATION_CONFIG?.resumesBucket || "").trim();
+    return fromAppConfig || DEFAULT_RESUMES_BUCKET;
+}
+
+function getAdminAuthConfig() {
+    const config = window.HR_ADMIN_AUTH || {};
+    return {
+        loginId: String(config.loginId || DEFAULT_ADMIN_LOGIN_ID).trim(),
+        email: String(config.email || "").trim().toLowerCase()
+    };
+}
+
+function sanitizeFileName(name) {
+    return String(name || "resume.pdf")
+        .replace(/[^\w.\-]+/g, "_")
+        .replace(/_+/g, "_")
+        .slice(0, 120);
+}
+
+function assertResumeFileAccepted(file) {
+    if (!file) {
+        throw new Error("Resume is required during registration.");
+    }
+    const lowerName = String(file.name || "").toLowerCase();
+    const hasAllowedExtension = ALLOWED_RESUME_EXTENSIONS.some((ext) => lowerName.endsWith(ext));
+    if (!hasAllowedExtension) {
+        throw new Error("Resume must be PDF, DOC, or DOCX.");
+    }
+    if (file.size > MAX_RESUME_SIZE) {
+        throw new Error("Resume must be 5MB or smaller.");
+    }
+}
+
+function mapProfileRow(profile) {
+    if (!profile) return null;
+    return {
+        id: profile.id,
+        full_name: profile.full_name || "",
+        email: profile.email || "",
+        phone: profile.phone || "",
+        role: profile.role || "candidate",
+        dob: profile.dob || null,
+        gender: profile.gender || null,
+        address: profile.address || null,
+        qualification: profile.qualification || null,
+        experience_years: profile.experience_years ?? null,
+        current_title: profile.current_title || null,
+        skills: Array.isArray(profile.skills) ? profile.skills : [],
+        linkedin_url: profile.linkedin_url || null,
+        resume_path: profile.resume_path || null,
+        resume_url: profile.resume_url || null,
+        created_at: profile.created_at || null
+    };
+}
+
+function toFriendlySupabaseError(error, fallback = "Request failed.") {
+    if (!error) return fallback;
+    const code = String(error.code || "");
+    const details = String(error.details || "");
+    const message = resolveReadableMessage(error.message || error.error_description || error.description, fallback);
+    if (code === "23505" || /duplicate key/i.test(details) || /already exists/i.test(message)) {
+        return "This record already exists.";
+    }
+    return message || fallback;
+}
+
+function normalizeRoute(path) {
+    const requestUrl = new URL(normalizeRequestPath(path), "https://static.local");
+    let routePath = requestUrl.pathname;
+    if (routePath.startsWith("/api/")) {
+        routePath = routePath.slice(4);
+    }
+    if (!routePath.startsWith("/")) {
+        routePath = `/${routePath}`;
+    }
+    return { requestUrl, routePath };
+}
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const existing = qsa("script[src]").find((script) => script.getAttribute("src") === src);
+        if (existing) {
+            if (existing.dataset.loaded === "1") {
+                resolve();
+                return;
+            }
+            existing.addEventListener("load", () => resolve(), { once: true });
+            existing.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), { once: true });
+            return;
+        }
+        const script = document.createElement("script");
+        script.src = src;
+        script.async = true;
+        script.addEventListener("load", () => {
+            script.dataset.loaded = "1";
+            resolve();
+        }, { once: true });
+        script.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), { once: true });
+        document.head.appendChild(script);
+    });
+}
+
+async function ensureSupabaseClient() {
+    if (supabaseClientPromise) return supabaseClientPromise;
+
+    supabaseClientPromise = (async () => {
+        if (!window.HR_SUPABASE_CONFIG) {
+            await loadScript("supabase-config.js");
+        }
+        if (!window.supabase?.createClient) {
+            await loadScript(SUPABASE_JS_CDN);
+        }
+
+        const config = getSupabaseConfig();
+        if (!config.url || !config.anonKey) {
+            throw new Error("Supabase URL or publishable key is missing in supabase-config.js.");
+        }
+
+        const client = window.supabase.createClient(config.url, config.anonKey, {
+            auth: {
+                persistSession: false,
+                autoRefreshToken: false,
+                detectSessionInUrl: false
+            }
+        });
+        window.__hrSupabaseClient = client;
+        return client;
+    })();
+
+    return supabaseClientPromise;
+}
+
+function ensureAdminLoginEmail(identifier) {
+    const login = String(identifier || "").trim().toLowerCase();
+    const config = getAdminAuthConfig();
+    if (!login) {
+        throw new Error("Please enter admin ID and password.");
+    }
+    if (login.includes("@")) {
+        return login;
+    }
+    if (login === config.loginId.toLowerCase()) {
+        if (!config.email) {
+            throw new Error("Set HR admin email in supabase-config.js under HR_ADMIN_AUTH.email.");
+        }
+        return config.email;
+    }
+    throw new Error("Invalid admin ID.");
+}
+
+async function createSignedResumeUrl(client, resumePath) {
+    if (!resumePath) return null;
+    const { data, error } = await client.storage
+        .from(getResumesBucket())
+        .createSignedUrl(resumePath, 60 * 60);
+    if (error || !data?.signedUrl) {
+        return null;
+    }
+    return data.signedUrl;
+}
+
+async function fetchProfileById(client, userId) {
+    const { data, error } = await client
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+    if (error) {
+        throw new Error(toFriendlySupabaseError(error, "Unable to load profile."));
+    }
+    return data || null;
+}
+
+async function enrichApplicationsWithResumeUrls(client, applications) {
+    const rows = Array.isArray(applications) ? applications : [];
+    const resumePaths = new Set();
+    rows.forEach((item) => {
+        const profile = firstRelationObject(item?.profiles);
+        if (profile?.resume_path) {
+            resumePaths.add(profile.resume_path);
+        }
+    });
+
+    const signedUrlMap = new Map();
+    await Promise.all([...resumePaths].map(async (resumePath) => {
+        const signedUrl = await createSignedResumeUrl(client, resumePath);
+        if (signedUrl) {
+            signedUrlMap.set(resumePath, signedUrl);
+        }
+    }));
+
+    return rows.map((item) => {
+        const profile = firstRelationObject(item?.profiles);
+        if (!profile) return item;
+
+        const signedUrl = profile.resume_path ? signedUrlMap.get(profile.resume_path) : null;
+        if (!signedUrl) return item;
+
+        const nextProfile = { ...profile, resume_url: signedUrl };
+        return {
+            ...item,
+            profiles: Array.isArray(item.profiles) ? [nextProfile] : nextProfile
+        };
+    });
+}
+
+async function getSignedInContext(requiredRole = null) {
+    const localSession = getSession();
+    if (!localSession?.token || localSession.auth_provider !== "supabase") {
+        throw new Error("Please sign in first.");
+    }
+
+    const refreshToken = String(localSession.refresh_token || "").trim();
+    if (!refreshToken) {
+        clearSession();
+        throw new Error("Session expired. Please sign in again.");
+    }
+
+    const client = await ensureSupabaseClient();
+    const { data, error } = await client.auth.setSession({
+        access_token: localSession.token,
+        refresh_token: refreshToken
+    });
+    if (error || !data?.session?.user) {
+        clearSession();
+        throw new Error("Session expired. Please sign in again.");
+    }
+
+    const profile = await fetchProfileById(client, data.session.user.id);
+    if (!profile) {
+        clearSession();
+        throw new Error("Profile not found. Please sign in again.");
+    }
+
+    if (requiredRole && profile.role !== requiredRole) {
+        throw new Error("You do not have permission to perform this action.");
+    }
+
+    const mappedProfile = mapProfileRow(profile);
+    const signedResumeUrl = await createSignedResumeUrl(client, mappedProfile.resume_path);
+    if (signedResumeUrl) {
+        mappedProfile.resume_url = signedResumeUrl;
+    }
+
+    setSession(data.session.access_token, mappedProfile, data.session.refresh_token, "supabase");
+    return { client, authSession: data.session, profile: mappedProfile };
+}
+
+async function signOutSupabaseQuietly() {
+    const localSession = getSession();
+    if (!localSession || localSession.auth_provider !== "supabase") {
+        return;
+    }
+    try {
+        const client = await ensureSupabaseClient();
+        await client.auth.signOut();
+    } catch {
+        // Ignore sign-out failures and clear local session anyway.
+    }
+}
+
+async function supabaseApiRequest(path, options = {}) {
     const {
         method = "GET",
         body,
@@ -898,116 +1182,448 @@ async function apiRequest(path, options = {}) {
         auth = true
     } = options;
 
-    const headers = { Accept: "application/json" };
-    if (auth) {
-        const token = getAuthToken();
-        if (!token) {
-            throw new Error("Please sign in first.");
+    const { requestUrl, routePath } = normalizeRoute(path);
+    const payload = formData ? toPayloadFromFormData(formData) : (body || {});
+    const methodUpper = String(method || "GET").toUpperCase();
+    const client = await ensureSupabaseClient();
+
+    if (methodUpper === "GET" && routePath === "/health") {
+        return {
+            ok: true,
+            mode: "supabase_static",
+            message: "Static frontend is connected directly to Supabase."
+        };
+    }
+
+    if (methodUpper === "POST" && routePath === "/auth/register") {
+        const fullName = String(payload.full_name || "").trim();
+        const email = String(payload.email || "").trim().toLowerCase();
+        const phone = String(payload.phone || "").trim();
+        const password = String(payload.password || "");
+        const resumeFile = payload.resume || null;
+        const normalizedGender = payload.gender ? normalizeGenderValue(payload.gender) : null;
+        const rawExperience = payload.experience_years;
+        const experienceYears = parseNumberInput(rawExperience);
+
+        if (!fullName || !email || !phone || !password) {
+            throw new Error("Full name, email, phone, and password are required.");
         }
-        headers.Authorization = `Bearer ${token}`;
-    }
+        if (payload.gender && !normalizedGender) {
+            throw new Error("Gender must be male, female, or other.");
+        }
+        if (rawExperience !== undefined && rawExperience !== null && rawExperience !== "" && experienceYears === null) {
+            throw new Error("Experience years must be a valid number.");
+        }
+        assertResumeFileAccepted(resumeFile);
 
-    let requestBody;
-    if (formData) {
-        requestBody = formData;
-    } else if (body !== undefined) {
-        headers["Content-Type"] = "application/json";
-        requestBody = JSON.stringify(body);
-    }
-
-    if (isOfflineModeEnabled() && supportsOfflinePath(path)) {
-        return offlineApiRequest(path, {
-            method,
-            body,
-            formData,
-            auth,
-            headers
-        });
-    }
-
-    const baseCandidates = getApiBaseCandidates();
-    const pathCandidates = getApiPathCandidates(path);
-    let lastNetworkError = null;
-    let lastHttpMessage = "";
-    let lastHttpStatus = 0;
-
-    for (const baseUrl of baseCandidates) {
-        for (const requestPath of pathCandidates) {
-            const url = `${baseUrl}${requestPath}`;
-            try {
-                const response = await fetch(url, {
-                    method,
-                    headers,
-                    body: requestBody
-                });
-                const text = await response.text();
-                const payload = parseApiPayload(text, response);
-                if (response.ok) {
-                    return payload;
+        const signUpResponse = await client.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: fullName,
+                    phone,
+                    role: "candidate"
                 }
-
-                if (response.status === 401) clearSession();
-
-                const message = apiErrorMessage(payload, response.status);
-                lastHttpMessage = message;
-                lastHttpStatus = response.status;
-
-                const hasFallbackRoutes = baseCandidates.length > 1 || pathCandidates.length > 1;
-                if (hasFallbackRoutes && (response.status === 404 || response.status === 405)) {
-                    continue;
-                }
-
-                throw new Error(message);
-            } catch (error) {
-                if (error instanceof Error && error.message === lastHttpMessage) {
-                    throw error;
-                }
-                lastNetworkError = error;
             }
+        });
+        if (signUpResponse.error) {
+            throw new Error(toFriendlySupabaseError(signUpResponse.error, "Unable to register candidate."));
         }
+
+        let signInSession = signUpResponse.data.session || null;
+        let signInUser = signUpResponse.data.user || signUpResponse.data.session?.user || null;
+
+        if (!signInSession) {
+            const loginResponse = await client.auth.signInWithPassword({ email, password });
+            if (loginResponse.error || !loginResponse.data.session) {
+                throw new Error("Registration created. Please verify your email, then sign in.");
+            }
+            signInSession = loginResponse.data.session;
+            signInUser = loginResponse.data.user || loginResponse.data.session.user;
+        }
+
+        if (!signInSession?.access_token || !signInSession?.refresh_token || !signInUser?.id) {
+            throw new Error("Registration succeeded but session setup failed. Please try signing in.");
+        }
+
+        const setSessionResponse = await client.auth.setSession({
+            access_token: signInSession.access_token,
+            refresh_token: signInSession.refresh_token
+        });
+        if (setSessionResponse.error) {
+            throw new Error(toFriendlySupabaseError(setSessionResponse.error, "Unable to finalize registration session."));
+        }
+
+        const userId = signInUser.id;
+        const resumePath = `profiles/${userId}/${Date.now()}-${sanitizeFileName(resumeFile.name)}`;
+        const uploadResponse = await client.storage
+            .from(getResumesBucket())
+            .upload(resumePath, resumeFile, {
+                upsert: true,
+                contentType: resumeFile.type || "application/octet-stream"
+            });
+        if (uploadResponse.error) {
+            throw new Error(toFriendlySupabaseError(uploadResponse.error, "Unable to upload resume."));
+        }
+
+        const resumeUrl = await createSignedResumeUrl(client, resumePath);
+        const updatePayload = {
+            full_name: fullName,
+            email,
+            phone,
+            dob: payload.dob || null,
+            gender: normalizedGender,
+            address: payload.address ? String(payload.address).trim() : null,
+            qualification: payload.qualification ? String(payload.qualification).trim() : null,
+            experience_years: experienceYears,
+            current_title: payload.current_title ? String(payload.current_title).trim() : null,
+            skills: parseSkillsInput(payload.skills),
+            linkedin_url: payload.linkedin_url ? String(payload.linkedin_url).trim() : null,
+            resume_path: resumePath,
+            resume_url: resumeUrl
+        };
+        const profileUpdate = await client
+            .from("profiles")
+            .update(updatePayload)
+            .eq("id", userId);
+        if (profileUpdate.error) {
+            throw new Error(toFriendlySupabaseError(profileUpdate.error, "Unable to save candidate profile."));
+        }
+
+        await client.auth.signOut();
+        return {
+            message: "Registration completed successfully.",
+            user: {
+                id: userId,
+                email,
+                role: "candidate"
+            }
+        };
     }
 
-    const shouldTryOffline =
-        supportsOfflinePath(path) &&
-        (
-            Boolean(lastNetworkError) ||
-            ((lastHttpStatus === 404 || lastHttpStatus === 405) && isMissingApiRouteMessage(lastHttpMessage))
+    if (methodUpper === "POST" && routePath === "/auth/login") {
+        const role = String(payload.role || "").trim().toLowerCase();
+        const identifier = String(payload.identifier || "").trim();
+        const password = String(payload.password || "");
+
+        if (!role || !identifier || !password) {
+            throw new Error("Role, login ID, and password are required.");
+        }
+        if (!["candidate", "hr_admin"].includes(role)) {
+            throw new Error("Invalid login role.");
+        }
+
+        const email = role === "hr_admin"
+            ? ensureAdminLoginEmail(identifier)
+            : String(identifier).toLowerCase();
+        if (role === "candidate" && !email.includes("@")) {
+            throw new Error("Please enter your registered email address.");
+        }
+
+        const signInResponse = await client.auth.signInWithPassword({ email, password });
+        if (signInResponse.error || !signInResponse.data.session) {
+            throw new Error(toFriendlySupabaseError(signInResponse.error, "Invalid login credentials."));
+        }
+
+        const authUser = signInResponse.data.user || signInResponse.data.session.user;
+        const profile = await fetchProfileById(client, authUser.id);
+        if (!profile) {
+            await client.auth.signOut();
+            throw new Error("Profile not found. Contact HR support.");
+        }
+
+        if (role === "candidate" && profile.role !== "candidate") {
+            await client.auth.signOut();
+            throw new Error("This account is admin. Use admin login option.");
+        }
+
+        if (role === "hr_admin" && profile.role !== "hr_admin") {
+            await client.auth.signOut();
+            throw new Error("Invalid admin ID or password.");
+        }
+
+        const mapped = mapProfileRow(profile);
+        const signedResumeUrl = await createSignedResumeUrl(client, mapped.resume_path);
+        if (signedResumeUrl) {
+            mapped.resume_url = signedResumeUrl;
+        }
+
+        setSession(
+            signInResponse.data.session.access_token,
+            mapped,
+            signInResponse.data.session.refresh_token,
+            "supabase"
         );
 
-    if (shouldTryOffline) {
-        setOfflineModeEnabled(true);
-        if (!offlineToastShown) {
-            offlineToastShown = true;
-            toast("Backend not reachable. Switched to offline mode.");
+        return {
+            message: role === "hr_admin" ? "Admin login successful." : "Login successful.",
+            token: signInResponse.data.session.access_token,
+            refresh_token: signInResponse.data.session.refresh_token,
+            auth_provider: "supabase",
+            user: mapped
+        };
+    }
+
+    if (methodUpper === "GET" && routePath === "/auth/me") {
+        if (!auth) {
+            throw new Error("Authentication required.");
         }
-        return offlineApiRequest(path, {
-            method,
-            body,
-            formData,
-            auth,
-            headers
-        });
+        const context = await getSignedInContext();
+        return { user: context.profile };
     }
 
-    if (lastHttpMessage) {
-        if (lastHttpStatus === 404 || /route not found/i.test(lastHttpMessage) || /the page could not be found/i.test(lastHttpMessage)) {
-            throw new Error("Backend API route was not found. Please run backend on port 4000 or deploy the /api routes.");
+    if (methodUpper === "GET" && routePath === "/jobs") {
+        const includeInactive = requestUrl.searchParams.get("all") === "1";
+
+        if (includeInactive) {
+            await getSignedInContext("hr_admin");
         }
-        throw new Error(lastHttpMessage);
+
+        let query = client
+            .from("jobs")
+            .select("*")
+            .order("created_at", { ascending: false });
+        if (!includeInactive) {
+            query = query.eq("is_active", true);
+        }
+
+        const { data, error } = await query;
+        if (error) {
+            throw new Error(toFriendlySupabaseError(error, "Unable to load jobs."));
+        }
+
+        return { jobs: Array.isArray(data) ? data : [] };
     }
 
-    if (lastNetworkError) {
-        throw new Error(getBackendConnectionMessage());
+    if (methodUpper === "GET" && /^\/jobs\/[^/]+$/.test(routePath)) {
+        const includeInactive = requestUrl.searchParams.get("all") === "1";
+        const jobId = decodeURIComponent(routePath.slice("/jobs/".length));
+
+        if (includeInactive) {
+            await getSignedInContext("hr_admin");
+        }
+
+        let query = client
+            .from("jobs")
+            .select("*")
+            .eq("id", jobId)
+            .limit(1)
+            .maybeSingle();
+        if (!includeInactive) {
+            query = query.eq("is_active", true);
+        }
+
+        const { data, error } = await query;
+        if (error) {
+            throw new Error(toFriendlySupabaseError(error, "Unable to load selected job."));
+        }
+        if (!data) {
+            throw new Error("Job not found.");
+        }
+
+        return { job: data };
     }
 
-    throw new Error(getBackendConnectionMessage());
+    if (methodUpper === "POST" && routePath === "/jobs") {
+        const context = await getSignedInContext("hr_admin");
+        if (!context.profile || context.profile.role !== "hr_admin") {
+            throw new Error("You do not have permission to perform this action.");
+        }
+
+        const title = String(payload.title || "").trim();
+        const location = String(payload.location || "").trim();
+        if (!title || !location) {
+            throw new Error("Title and location are required.");
+        }
+
+        const createResponse = await client
+            .from("jobs")
+            .insert({
+                title,
+                company_name: String(payload.company_name || "").trim() || "Raicam Industries",
+                description: String(payload.description || "").trim() || null,
+                department: String(payload.department || "").trim() || null,
+                location,
+                job_type: String(payload.job_type || "full_time"),
+                salary_range: String(payload.salary_range || "").trim() || null,
+                skills_required: parseSkillsInput(payload.skills_required),
+                perks: String(payload.perks || "").trim() || null,
+                is_active: true
+            })
+            .select("*")
+            .single();
+        if (createResponse.error) {
+            throw new Error(toFriendlySupabaseError(createResponse.error, "Unable to create job."));
+        }
+
+        jobCache.active = null;
+        jobCache.all = null;
+        return {
+            message: "Job created.",
+            job: createResponse.data
+        };
+    }
+
+    if (methodUpper === "POST" && routePath === "/applications") {
+        const context = await getSignedInContext("candidate");
+        const jobId = String(payload.job_id || "").trim();
+        if (!jobId) {
+            throw new Error("Job ID is required.");
+        }
+
+        const gender = payload.gender ? normalizeGenderValue(payload.gender) : context.profile.gender;
+        if (payload.gender && !gender) {
+            throw new Error("Gender must be male, female, or other.");
+        }
+
+        const rawExperience = payload.experience_years;
+        const hasExperienceInput = rawExperience !== undefined && rawExperience !== null && rawExperience !== "";
+        const experienceYears = hasExperienceInput ? parseNumberInput(rawExperience) : context.profile.experience_years;
+        if (hasExperienceInput && experienceYears === null) {
+            throw new Error("Experience years must be a valid number.");
+        }
+
+        const { data: jobRow, error: jobError } = await client
+            .from("jobs")
+            .select("id,title,is_active")
+            .eq("id", jobId)
+            .eq("is_active", true)
+            .limit(1)
+            .maybeSingle();
+        if (jobError) {
+            throw new Error(toFriendlySupabaseError(jobError, "Unable to validate selected job."));
+        }
+        if (!jobRow) {
+            throw new Error("Selected job is not available.");
+        }
+
+        const profileUpdates = {};
+        if (payload.full_name) profileUpdates.full_name = String(payload.full_name).trim();
+        if (payload.phone) profileUpdates.phone = String(payload.phone).trim();
+        if (payload.dob !== undefined) profileUpdates.dob = payload.dob || null;
+        if (payload.gender !== undefined) profileUpdates.gender = gender || null;
+        if (payload.address !== undefined) profileUpdates.address = payload.address ? String(payload.address).trim() : null;
+        if (payload.qualification !== undefined) profileUpdates.qualification = payload.qualification ? String(payload.qualification).trim() : null;
+        if (hasExperienceInput) profileUpdates.experience_years = experienceYears;
+        if (payload.current_title !== undefined) profileUpdates.current_title = payload.current_title ? String(payload.current_title).trim() : null;
+        if (payload.skills !== undefined) profileUpdates.skills = parseSkillsInput(payload.skills);
+        if (payload.linkedin_url !== undefined) profileUpdates.linkedin_url = payload.linkedin_url ? String(payload.linkedin_url).trim() : null;
+
+        if (Object.keys(profileUpdates).length) {
+            const profileUpdate = await client
+                .from("profiles")
+                .update(profileUpdates)
+                .eq("id", context.profile.id);
+            if (profileUpdate.error) {
+                throw new Error(toFriendlySupabaseError(profileUpdate.error, "Unable to update profile details."));
+            }
+        }
+
+        const mergedProfile = {
+            ...context.profile,
+            ...profileUpdates
+        };
+
+        const applicationInsert = await client
+            .from("applications")
+            .insert({
+                candidate_id: context.profile.id,
+                job_id: jobId,
+                dob: mergedProfile.dob || null,
+                gender: mergedProfile.gender || null,
+                address: mergedProfile.address || null,
+                qualification: mergedProfile.qualification || null,
+                experience_years: mergedProfile.experience_years ?? null,
+                current_title: mergedProfile.current_title || null,
+                skills: Array.isArray(mergedProfile.skills) ? mergedProfile.skills : [],
+                resume_url: mergedProfile.resume_url || null,
+                cover_letter: payload.cover_letter ? String(payload.cover_letter).trim() : null,
+                linkedin_url: mergedProfile.linkedin_url || null,
+                status: "under_review"
+            })
+            .select("id,status,created_at")
+            .single();
+
+        if (applicationInsert.error) {
+            const errorMessage = toFriendlySupabaseError(applicationInsert.error, "Unable to submit application.");
+            if (/duplicate|already exists/i.test(errorMessage)) {
+                throw new Error("You have already applied for this job.");
+            }
+            throw new Error(errorMessage);
+        }
+
+        jobCache.active = null;
+        jobCache.all = null;
+        return {
+            message: "Application submitted successfully.",
+            application: applicationInsert.data
+        };
+    }
+
+    if (methodUpper === "GET" && routePath === "/applications/my") {
+        const context = await getSignedInContext("candidate");
+        const { data, error } = await client
+            .from("applications")
+            .select("id,status,created_at,job_id,jobs!applications_job_id_fkey(id,title,company_name,location,job_type,salary_range)")
+            .eq("candidate_id", context.profile.id)
+            .order("created_at", { ascending: false });
+        if (error) {
+            throw new Error(toFriendlySupabaseError(error, "Unable to load your applications."));
+        }
+        return { applications: Array.isArray(data) ? data : [] };
+    }
+
+    if (methodUpper === "GET" && routePath === "/admin/applications") {
+        await getSignedInContext("hr_admin");
+        const { data, error } = await client
+            .from("applications")
+            .select("id,status,created_at,candidate_id,job_id,profiles!applications_candidate_id_fkey(full_name,phone,email,resume_url,resume_path,qualification,experience_years),jobs!applications_job_id_fkey(id,title,company_name,location,job_type)")
+            .order("created_at", { ascending: false });
+        if (error) {
+            throw new Error(toFriendlySupabaseError(error, "Unable to load admin applications."));
+        }
+
+        const enriched = await enrichApplicationsWithResumeUrls(client, data || []);
+        return { applications: enriched };
+    }
+
+    if (methodUpper === "PATCH" && /^\/admin\/applications\/[^/]+\/status$/.test(routePath)) {
+        await getSignedInContext("hr_admin");
+        const applicationId = decodeURIComponent(routePath.slice("/admin/applications/".length, -"/status".length));
+        const status = String(payload.status || "");
+        if (!STATUS_OPTIONS.includes(status)) {
+            throw new Error("Invalid application status.");
+        }
+
+        const updateResponse = await client
+            .from("applications")
+            .update({ status })
+            .eq("id", applicationId)
+            .select("id,status")
+            .single();
+        if (updateResponse.error) {
+            throw new Error(toFriendlySupabaseError(updateResponse.error, "Unable to update application status."));
+        }
+
+        return {
+            message: "Application status updated.",
+            application: updateResponse.data
+        };
+    }
+
+    throw new Error("Route not found.");
+}
+
+async function apiRequest(path, options = {}) {
+    return supabaseApiRequest(path, options);
 }
 
 async function checkApiHealth() {
     try {
         const response = await apiRequest("/api/health", { auth: false });
         if (response && response.ok === false) {
-            return { ok: false, error: new Error("Backend health check failed.") };
+            return { ok: false, error: new Error("Service health check failed.") };
         }
         return { ok: true };
     } catch (error) {
@@ -1019,7 +1635,6 @@ async function fetchCurrentUser() {
     const session = getSession();
     if (!session?.token) return null;
     const response = await apiRequest("/api/auth/me", { auth: true });
-    setSession(session.token, response.user);
     return response.user;
 }
 
@@ -1505,6 +2120,56 @@ function createStatusSelect(applicationId, selectedStatus) {
     `;
 }
 
+function scheduleHrRealtimeRefresh() {
+    if (hrRealtimeRefreshTimer) {
+        window.clearTimeout(hrRealtimeRefreshTimer);
+    }
+    hrRealtimeRefreshTimer = window.setTimeout(async () => {
+        hrRealtimeRefreshTimer = null;
+        jobCache.active = null;
+        jobCache.all = null;
+        await renderHrDashboard();
+        await renderHrApplicants();
+    }, 220);
+}
+
+async function initHrRealtimeSubscription() {
+    const page = getCurrentPageName();
+    if (page !== "hr-dashboard" && page !== "hr-applicants") {
+        return;
+    }
+
+    const session = getSession();
+    if (!session?.user || session.user.role !== "hr_admin") {
+        return;
+    }
+
+    const client = await ensureSupabaseClient();
+    if (hrRealtimeChannel) {
+        return;
+    }
+
+    hrRealtimeChannel = client
+        .channel("hr-applications-live")
+        .on("postgres_changes", { event: "*", schema: "public", table: "applications" }, () => {
+            scheduleHrRealtimeRefresh();
+        })
+        .on("postgres_changes", { event: "*", schema: "public", table: "jobs" }, () => {
+            scheduleHrRealtimeRefresh();
+        })
+        .subscribe();
+
+    if (!hrRealtimeUnloadBound) {
+        window.addEventListener("beforeunload", () => {
+            if (hrRealtimeChannel && window.__hrSupabaseClient) {
+                window.__hrSupabaseClient.removeChannel(hrRealtimeChannel);
+                hrRealtimeChannel = null;
+            }
+        });
+        hrRealtimeUnloadBound = true;
+    }
+}
+
 async function renderHrDashboard() {
     const jobsList = qs("#hr-jobs-list");
     const applicantRows = qs("#hr-applicant-rows");
@@ -1802,8 +2467,13 @@ async function renderHrApplicants() {
 
 function initLogoutActions() {
     qsa("[data-logout]").forEach((link) => {
-        link.addEventListener("click", (event) => {
+        link.addEventListener("click", async (event) => {
             event.preventDefault();
+            if (hrRealtimeChannel && window.__hrSupabaseClient) {
+                window.__hrSupabaseClient.removeChannel(hrRealtimeChannel);
+                hrRealtimeChannel = null;
+            }
+            await signOutSupabaseQuietly();
             clearSession();
             window.location.href = "login.html";
         });
@@ -1811,11 +2481,7 @@ function initLogoutActions() {
 }
 
 function getErrorMessage(error) {
-    const message = formatToastMessage(error);
-    if (/the page could not be found/i.test(message) || /route not found/i.test(message)) {
-        return "Backend API route was not found. Please run backend on port 4000 or deploy the /api routes.";
-    }
-    return message;
+    return formatToastMessage(error);
 }
 
 function showLoginStep(step) {
@@ -1826,6 +2492,14 @@ function showLoginStep(step) {
     roleEl.classList.toggle("is-hidden", step !== "role");
     candEl.classList.toggle("is-hidden", step !== "candidate");
     adminEl.classList.toggle("is-hidden", step !== "admin");
+}
+
+function getPostLoginRedirect(defaultPath) {
+    const nextRaw = String(params().get("next") || "").trim();
+    if (!nextRaw) return defaultPath;
+    if (/^https?:/i.test(nextRaw) || nextRaw.startsWith("//")) return defaultPath;
+    if (!nextRaw.endsWith(".html") && !nextRaw.includes(".html?")) return defaultPath;
+    return nextRaw;
 }
 
 function initLoginWizard() {
@@ -1866,14 +2540,19 @@ function initLoginWizard() {
             });
             if (!data.token || !data.user) {
                 throw new Error(
-                    "Login response was incomplete. Check that /api/health works on this server."
+                    "Login response was incomplete."
                 );
             }
-            setSession(data.token, data.user);
+            setSession(
+                data.token,
+                data.user,
+                String(data.refresh_token || ""),
+                String(data.auth_provider || "supabase")
+            );
             if (status) status.textContent = "Success. Redirecting...";
             toast("Signed in successfully.");
             window.setTimeout(() => {
-                window.location.href = roleHomePage(data.user?.role || "candidate");
+                window.location.href = getPostLoginRedirect(roleHomePage(data.user?.role || "candidate"));
             }, 400);
         } catch (error) {
             const msg = getErrorMessage(error);
@@ -1912,14 +2591,19 @@ function initLoginWizard() {
             });
             if (!data.token || !data.user) {
                 throw new Error(
-                    "Login response was incomplete. Check that /api/health works on this server."
+                    "Login response was incomplete."
                 );
             }
-            setSession(data.token, data.user);
+            setSession(
+                data.token,
+                data.user,
+                String(data.refresh_token || ""),
+                String(data.auth_provider || "supabase")
+            );
             if (status) status.textContent = "Success. Opening admin panel...";
             toast("Welcome, administrator.");
             window.setTimeout(() => {
-                window.location.href = "hr-dashboard.html";
+                window.location.href = getPostLoginRedirect("hr-dashboard.html");
             }, 400);
         } catch (error) {
             const msg = getErrorMessage(error);
@@ -2017,6 +2701,14 @@ function initAuthForms() {
     initLoginWizard();
 }
 
+function buildLoginRedirect(targetRole) {
+    const pageFile = window.location.pathname.split("/").filter(Boolean).pop() || "index.html";
+    const next = encodeURIComponent(`${pageFile}${window.location.search || ""}`);
+    return targetRole === "hr_admin"
+        ? `login.html?next=${next}#admin`
+        : `login.html?next=${next}#candidate`;
+}
+
 async function enforceRoleAccess() {
     const page = getCurrentPageName();
     const requiresCandidate = CANDIDATE_ONLY_PAGES.has(page);
@@ -2029,9 +2721,9 @@ async function enforceRoleAccess() {
     const session = getSession();
     if (!session?.token) {
         if (requiresAdmin) {
-            window.location.href = "login.html#admin";
+            window.location.href = buildLoginRedirect("hr_admin");
         } else if (requiresCandidate) {
-            window.location.href = "login.html#candidate";
+            window.location.href = buildLoginRedirect("candidate");
         }
         return null;
     }
@@ -2041,9 +2733,9 @@ async function enforceRoleAccess() {
         if (!user) {
             clearSession();
             if (requiresAdmin) {
-                window.location.href = "login.html#admin";
+                window.location.href = buildLoginRedirect("hr_admin");
             } else if (requiresCandidate) {
-                window.location.href = "login.html#candidate";
+                window.location.href = buildLoginRedirect("candidate");
             }
             return null;
         }
@@ -2067,9 +2759,9 @@ async function enforceRoleAccess() {
     } catch (error) {
         clearSession();
         if (requiresAdmin) {
-            window.location.href = "login.html#admin";
+            window.location.href = buildLoginRedirect("hr_admin");
         } else if (requiresCandidate) {
-            window.location.href = "login.html#candidate";
+            window.location.href = buildLoginRedirect("candidate");
         }
         return null;
     }
@@ -2108,6 +2800,7 @@ async function init() {
     await renderCandidateDashboard(currentUser);
     await renderHrDashboard();
     await renderHrApplicants();
+    await initHrRealtimeSubscription();
     initRevealAnimations();
 }
 

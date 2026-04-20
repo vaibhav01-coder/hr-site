@@ -2780,3 +2780,76 @@ body {
         transform: none !important;
     }
 }
+
+/* Auth UI polish */
+.auth-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 255, 0.94)) !important;
+    border: 1px solid rgba(17, 58, 109, 0.12) !important;
+    box-shadow: 0 20px 40px rgba(16, 44, 84, 0.1) !important;
+}
+
+.auth-step h1,
+.auth-step h2 {
+    font-size: clamp(1.55rem, 2.6vw, 2.1rem);
+    line-height: 1.15;
+    margin-bottom: 8px;
+}
+
+.auth-lead {
+    color: #4d5f76;
+    margin-bottom: 14px;
+}
+
+.role-choice-btn {
+    display: grid !important;
+    gap: 5px;
+    align-content: center;
+    text-align: left;
+    min-height: 86px;
+}
+
+.role-choice-btn strong {
+    font-size: 1rem;
+    color: #12305b;
+    letter-spacing: -0.01em;
+}
+
+.role-choice-btn span {
+    font-size: 0.86rem;
+    color: #59708b;
+}
+
+.auth-section-title {
+    margin-top: 8px;
+    margin-bottom: 4px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #244b7a;
+}
+
+.auth-media-points {
+    margin: 12px 0 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 6px;
+    color: #3f5876;
+    font-size: 0.92rem;
+}
+
+.auth-media-points li {
+    line-height: 1.45;
+}
+
+.login-status-line {
+    min-height: 24px;
+    color: #244d7c;
+    font-weight: 600;
+}
+
+@media (max-width: 760px) {
+    .role-choice-btn {
+        min-height: 74px;
+    }
+}
