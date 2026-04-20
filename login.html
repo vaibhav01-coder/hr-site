@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260420c">
+    <link rel="stylesheet" href="styles.css?v=20260420d">
 </head>
 <body data-page="login">
     <main class="auth-shell">
@@ -53,21 +53,16 @@
                 <div id="auth-step-admin" class="auth-step is-hidden">
                     <button type="button" class="text-back" id="btn-back-admin">Back to role selection</button>
                     <h2>Admin Sign In</h2>
-                    <p class="auth-lead">Enter admin credentials shared by HR.</p>
+                    <p class="auth-lead">Sign in with your authorized admin credentials.</p>
                     <form id="admin-login-form" class="auth-form" autocomplete="on">
                         <label class="field">
                             <span>Admin ID or Email</span>
-                            <input id="admin-id" type="text" name="adminId" autocomplete="username" value="admin" required>
+                            <input id="admin-id" type="text" name="adminId" autocomplete="username" required>
                         </label>
                         <label class="field">
                             <span>Password</span>
                             <input id="admin-password" type="password" name="password" autocomplete="current-password" required>
                         </label>
-                        <div class="auth-helper-box">
-                            <strong>Default admin login</strong>
-                            <span>ID: <code>admin</code> | Password: <code>admin123</code></span>
-                            <button type="button" class="btn btn-outline btn-sm" id="fill-admin-default">Use default ID</button>
-                        </div>
                         <button type="submit" class="btn btn-primary full-width" id="admin-login-submit">Sign in to admin panel</button>
                     </form>
                     <p class="login-status-line" id="login-status-admin"></p>
@@ -79,10 +74,11 @@
 
     <div id="toast-root" class="toast-root"></div>
     <script src="api-config.js?v=20260416h"></script>
-    <script src="supabase-config.js?v=20260420a"></script>
-    <script src="app.js?v=20260420c"></script>
+    <script src="supabase-config.js?v=20260420d"></script>
+    <script src="app.js?v=20260420d"></script>
 </body>
 </html>
+
 
 
 

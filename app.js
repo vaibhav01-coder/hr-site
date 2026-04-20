@@ -11,9 +11,9 @@ const ALLOWED_RESUME_EXTENSIONS = [".pdf", ".doc", ".docx"];
 const STATUS_OPTIONS = ["under_review", "shortlisted", "hired", "rejected"];
 const OFFLINE_DB_KEY = "hr_portal_offline_db_v1";
 const OFFLINE_MODE_KEY = "hr_portal_offline_mode_v1";
-const DEFAULT_ADMIN_LOGIN_ID = "admin";
-const DEFAULT_ADMIN_LOGIN_PASSWORD = "admin123";
-const DEFAULT_ADMIN_EMAIL = "admin@gmail.com";
+const DEFAULT_ADMIN_LOGIN_ID = "arvind";
+const DEFAULT_ADMIN_LOGIN_PASSWORD = "arvind@123";
+const DEFAULT_ADMIN_EMAIL = "arvind@gmail.com";
 const DEFAULT_RESUMES_BUCKET = "resumes";
 const SUPABASE_JS_CDN = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 
@@ -2516,18 +2516,6 @@ function initLoginWizard() {
     const hash = (window.location.hash || "").toLowerCase();
     if (hash === "#candidate") showLoginStep("candidate");
     else if (hash === "#admin") showLoginStep("admin");
-
-    const adminIdInput = qs("#admin-id");
-    if (adminIdInput && !adminIdInput.value.trim()) {
-        adminIdInput.value = DEFAULT_ADMIN_LOGIN_ID;
-    }
-
-    qs("#fill-admin-default")?.addEventListener("click", () => {
-        if (adminIdInput) {
-            adminIdInput.value = DEFAULT_ADMIN_LOGIN_ID;
-        }
-        qs("#admin-password")?.focus();
-    });
 
     const candidateForm = qs("#candidate-login-form");
     candidateForm?.addEventListener("submit", async (event) => {

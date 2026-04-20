@@ -8,7 +8,6 @@ window.HR_APPLICATION_CONFIG = {
 };
 
 window.HR_ADMIN_AUTH = {
-    loginId: "admin",
-    // Set this to your Supabase admin user's email if admin signs in with short ID above.
-    email: "admin@gmail.com"
+    loginId: "arvind",
+    email: "arvind@gmail.com"
 };
