@@ -96,6 +96,24 @@ alter table public.profiles enable row level security;
 alter table public.jobs enable row level security;
 alter table public.applications enable row level security;
 
+create or replace function public.is_hr_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+    select exists (
+        select 1
+        from public.profiles p
+        where p.id = auth.uid()
+          and p.role = 'hr_admin'
+    );
+$$;
+
+revoke all on function public.is_hr_admin() from public;
+grant execute on function public.is_hr_admin() to authenticated;
+
 drop policy if exists "profiles_self_select" on public.profiles;
 create policy "profiles_self_select"
 on public.profiles
@@ -116,14 +134,7 @@ create policy "profiles_admin_select"
 on public.profiles
 for select
 to authenticated
-using (
-    exists (
-        select 1
-        from public.profiles p
-        where p.id = auth.uid()
-          and p.role = 'hr_admin'
-    )
-);
+using (public.is_hr_admin());
 
 drop policy if exists "jobs_public_read" on public.jobs;
 create policy "jobs_public_read"
@@ -137,50 +148,22 @@ create policy "jobs_admin_select_all"
 on public.jobs
 for select
 to authenticated
-using (
-    exists (
-        select 1
-        from public.profiles p
-        where p.id = auth.uid()
-          and p.role = 'hr_admin'
-    )
-);
+using (public.is_hr_admin());
 
 drop policy if exists "jobs_admin_insert" on public.jobs;
 create policy "jobs_admin_insert"
 on public.jobs
 for insert
 to authenticated
-with check (
-    exists (
-        select 1
-        from public.profiles p
-        where p.id = auth.uid()
-          and p.role = 'hr_admin'
-    )
-);
+with check (public.is_hr_admin());
 
 drop policy if exists "jobs_admin_update" on public.jobs;
 create policy "jobs_admin_update"
 on public.jobs
 for update
 to authenticated
-using (
-    exists (
-        select 1
-        from public.profiles p
-        where p.id = auth.uid()
-          and p.role = 'hr_admin'
-    )
-)
-with check (
-    exists (
-        select 1
-        from public.profiles p
-        where p.id = auth.uid()
-          and p.role = 'hr_admin'
-    )
-);
+using (public.is_hr_admin())
+with check (public.is_hr_admin());
 
 drop policy if exists "applications_self_select" on public.applications;
 create policy "applications_self_select"
@@ -201,36 +184,15 @@ create policy "applications_admin_select"
 on public.applications
 for select
 to authenticated
-using (
-    exists (
-        select 1
-        from public.profiles p
-        where p.id = auth.uid()
-          and p.role = 'hr_admin'
-    )
-);
+using (public.is_hr_admin());
 
 drop policy if exists "applications_admin_update" on public.applications;
 create policy "applications_admin_update"
 on public.applications
 for update
 to authenticated
-using (
-    exists (
-        select 1
-        from public.profiles p
-        where p.id = auth.uid()
-          and p.role = 'hr_admin'
-    )
-)
-with check (
-    exists (
-        select 1
-        from public.profiles p
-        where p.id = auth.uid()
-          and p.role = 'hr_admin'
-    )
-);
+using (public.is_hr_admin())
+with check (public.is_hr_admin());
 
 insert into storage.buckets (id, name, public)
 values ('resumes', 'resumes', false)
@@ -265,12 +227,7 @@ for select
 to authenticated
 using (
     bucket_id = 'resumes'
-    and exists (
-        select 1
-        from public.profiles p
-        where p.id = auth.uid()
-          and p.role = 'hr_admin'
-    )
+    and public.is_hr_admin()
 );
 
 do $$

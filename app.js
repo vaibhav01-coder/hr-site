@@ -13,6 +13,7 @@ const OFFLINE_DB_KEY = "hr_portal_offline_db_v1";
 const OFFLINE_MODE_KEY = "hr_portal_offline_mode_v1";
 const DEFAULT_ADMIN_LOGIN_ID = "admin";
 const DEFAULT_ADMIN_LOGIN_PASSWORD = "admin123";
+const DEFAULT_ADMIN_EMAIL = "admin@gmail.com";
 const DEFAULT_RESUMES_BUCKET = "resumes";
 const SUPABASE_JS_CDN = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 
@@ -921,7 +922,7 @@ function getAdminAuthConfig() {
     const config = window.HR_ADMIN_AUTH || {};
     return {
         loginId: String(config.loginId || DEFAULT_ADMIN_LOGIN_ID).trim(),
-        email: String(config.email || "").trim().toLowerCase()
+        email: String(config.email || DEFAULT_ADMIN_EMAIL).trim().toLowerCase()
     };
 }
 
@@ -1055,10 +1056,7 @@ function ensureAdminLoginEmail(identifier) {
         return login;
     }
     if (login === config.loginId.toLowerCase()) {
-        if (!config.email) {
-            throw new Error("Set HR admin email in supabase-config.js under HR_ADMIN_AUTH.email.");
-        }
-        return config.email;
+        return config.email || DEFAULT_ADMIN_EMAIL;
     }
     throw new Error("Invalid admin ID.");
 }
@@ -1323,7 +1321,11 @@ async function supabaseApiRequest(path, options = {}) {
 
         const signInResponse = await client.auth.signInWithPassword({ email, password });
         if (signInResponse.error || !signInResponse.data.session) {
-            throw new Error(toFriendlySupabaseError(signInResponse.error, "Invalid login credentials."));
+            throw new Error(
+                role === "hr_admin"
+                    ? "Invalid admin ID or password."
+                    : toFriendlySupabaseError(signInResponse.error, "Invalid login credentials.")
+            );
         }
 
         const authUser = signInResponse.data.user || signInResponse.data.session.user;
@@ -2514,6 +2516,18 @@ function initLoginWizard() {
     const hash = (window.location.hash || "").toLowerCase();
     if (hash === "#candidate") showLoginStep("candidate");
     else if (hash === "#admin") showLoginStep("admin");
+
+    const adminIdInput = qs("#admin-id");
+    if (adminIdInput && !adminIdInput.value.trim()) {
+        adminIdInput.value = DEFAULT_ADMIN_LOGIN_ID;
+    }
+
+    qs("#fill-admin-default")?.addEventListener("click", () => {
+        if (adminIdInput) {
+            adminIdInput.value = DEFAULT_ADMIN_LOGIN_ID;
+        }
+        qs("#admin-password")?.focus();
+    });
 
     const candidateForm = qs("#candidate-login-form");
     candidateForm?.addEventListener("submit", async (event) => {

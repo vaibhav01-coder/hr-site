@@ -3150,3 +3150,41 @@ p,
         animation: none !important;
     }
 }
+
+/* User-friendly auth layout (no side images) */
+body[data-page="login"] .hpro-auth-layout,
+body[data-page="register"] .hpro-auth-layout,
+body[data-page="register"] .hpro-auth-layout-wide {
+    grid-template-columns: minmax(0, 860px) !important;
+    justify-content: center;
+}
+
+body[data-page="login"] .auth-card,
+body[data-page="register"] .auth-card,
+body[data-page="register"] .auth-card-wide {
+    width: min(100%, 860px) !important;
+}
+
+.auth-helper-box {
+    display: grid;
+    gap: 6px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(16, 56, 106, 0.18);
+    background: rgba(255, 255, 255, 0.82);
+}
+
+.auth-helper-box strong {
+    color: #163f6e;
+    font-size: 0.9rem;
+}
+
+.auth-helper-box span {
+    color: #557090;
+    font-size: 0.88rem;
+}
+
+.auth-helper-box code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: #164477;
+}
