@@ -1061,6 +1061,72 @@ function ensureAdminLoginEmail(identifier) {
     throw new Error("Invalid admin ID.");
 }
 
+async function ensureDefaultAdminBootstrap(client, email, password) {
+    const adminEmail = String(email || "").trim().toLowerCase();
+    const adminPassword = String(password || "");
+    if (!adminEmail || !adminPassword) return null;
+
+    // Try to create the configured default admin account if it does not exist yet.
+    const signUpResponse = await client.auth.signUp({
+        email: adminEmail,
+        password: adminPassword,
+        options: {
+            data: {
+                full_name: "Arvind Admin",
+                role: "hr_admin"
+            }
+        }
+    });
+
+    let session = signUpResponse.data?.session || null;
+    let user = signUpResponse.data?.user || signUpResponse.data?.session?.user || null;
+
+    if (signUpResponse.error) {
+        const message = String(signUpResponse.error.message || "").toLowerCase();
+        const alreadyRegistered =
+            message.includes("already registered") ||
+            message.includes("already been registered") ||
+            message.includes("user already");
+        if (!alreadyRegistered) {
+            return null;
+        }
+    }
+
+    if (!session) {
+        const signInRetry = await client.auth.signInWithPassword({
+            email: adminEmail,
+            password: adminPassword
+        });
+        if (signInRetry.error || !signInRetry.data?.session) {
+            return null;
+        }
+        session = signInRetry.data.session;
+        user = signInRetry.data.user || signInRetry.data.session.user;
+    }
+
+    if (!session?.user?.id && !user?.id) {
+        return null;
+    }
+
+    const userId = session?.user?.id || user.id;
+    await client
+        .from("profiles")
+        .update({
+            role: "hr_admin",
+            email: adminEmail,
+            full_name: "Arvind Admin"
+        })
+        .eq("id", userId);
+
+    return {
+        data: {
+            session,
+            user: user || session.user
+        },
+        error: null
+    };
+}
+
 async function createSignedResumeUrl(client, resumePath) {
     if (!resumePath) return null;
     const { data, error } = await client.storage
@@ -1319,7 +1385,30 @@ async function supabaseApiRequest(path, options = {}) {
             throw new Error("Please enter your registered email address.");
         }
 
-        const signInResponse = await client.auth.signInWithPassword({ email, password });
+        const normalizedIdentifier = String(identifier || "").trim().toLowerCase();
+        const isDefaultAdminAttempt =
+            role === "hr_admin" &&
+            password === DEFAULT_ADMIN_LOGIN_PASSWORD &&
+            (
+                normalizedIdentifier === DEFAULT_ADMIN_LOGIN_ID.toLowerCase() ||
+                normalizedIdentifier === DEFAULT_ADMIN_EMAIL.toLowerCase() ||
+                normalizedIdentifier === String(email || "").toLowerCase()
+            );
+
+        let signInResponse = await client.auth.signInWithPassword({ email, password });
+        if ((signInResponse.error || !signInResponse.data?.session) && isDefaultAdminAttempt) {
+            const bootstrapResponse = await ensureDefaultAdminBootstrap(client, String(email || DEFAULT_ADMIN_EMAIL), password);
+            if (bootstrapResponse?.data?.session) {
+                signInResponse = await client.auth.signInWithPassword({
+                    email: String(email || DEFAULT_ADMIN_EMAIL),
+                    password
+                });
+                if (signInResponse.error || !signInResponse.data?.session) {
+                    signInResponse = bootstrapResponse;
+                }
+            }
+        }
+
         if (signInResponse.error || !signInResponse.data.session) {
             throw new Error(
                 role === "hr_admin"
