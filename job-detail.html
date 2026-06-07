@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Job Detail | HR Hiring Portal</title>
+    <title>Role Detail | TalentBridge HR</title>
+    <meta name="description" content="Review full role details, requirements, and application expectations before applying through TalentBridge HR.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260420d">
+    <link rel="stylesheet" href="styles.css?v=20260607a">
 </head>
 <body data-page="job-detail">
     <header class="site-header slim">
         <div class="container nav-wrap">
-            <a class="brand" href="index.html"><span class="brand-mark">HR</span><span class="brand-text">Hiring Portal</span></a>
+            <a class="brand" href="index.html"><span class="brand-mark">TB</span><span class="brand-text">TalentBridge HR</span></a>
             <nav class="site-nav inline-nav">
                 <a href="jobs.html">Back to Jobs</a>
-                <a href="register.html">Register</a>
+                <a href="register.html">Create profile</a>
+                <a href="login.html">Sign in</a>
             </nav>
         </div>
     </header>
@@ -24,8 +26,8 @@
             <section class="surface hpro-page-banner">
                 <div class="hpro-page-banner-copy">
                     <span class="eyebrow">Role Details</span>
-                    <h1>Review complete position information</h1>
-                    <p>Understand requirements, salary, and role scope before submitting your application.</p>
+                    <h1>Review the role carefully before you apply</h1>
+                    <p>Use this page to understand requirements, compensation, location, and hiring expectations before submitting your candidate profile.</p>
                 </div>
                 <div class="hpro-page-banner-media">
                     <img src="assets/hiring-campaign.jpeg" alt="Job detail banner image">
@@ -35,12 +37,24 @@
                 <section class="surface reveal" id="job-detail-main"></section>
                 <aside class="surface reveal" id="job-detail-side"></aside>
             </div>
+            <section class="detail-support-grid">
+                <article class="surface detail-support-card">
+                    <span class="eyebrow">Before You Apply</span>
+                    <h3>Keep your profile complete and accurate</h3>
+                    <p>Hiring teams review your registered profile, experience, skills, and uploaded resume together. Updated information improves review quality.</p>
+                </article>
+                <article class="surface detail-support-card">
+                    <span class="eyebrow">After Submission</span>
+                    <h3>Track each stage from your dashboard</h3>
+                    <p>Application status changes appear inside your candidate workspace so you can return later without losing visibility.</p>
+                </article>
+            </section>
         </div>
     </main>
     <div id="toast-root" class="toast-root"></div>
     <script src="api-config.js?v=20260416h"></script>
-    <script src="supabase-config.js?v=20260420d"></script>
-    <script src="app.js?v=20260420e"></script>
+    <script src="supabase-config.js?v=20260607a"></script>
+    <script src="app.js?v=20260607a"></script>
 </body>
 </html>
 

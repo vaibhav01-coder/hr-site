@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jobs | HR Hiring Portal</title>
+    <title>Open Roles | TalentBridge HR</title>
+    <meta name="description" content="Browse verified jobs by title, location, and skill set across TalentBridge HR hiring partners.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260420d">
+    <link rel="stylesheet" href="styles.css?v=20260607a">
 </head>
 <body data-page="jobs">
     <header class="site-header slim">
         <div class="container nav-wrap">
-            <a class="brand" href="index.html"><span class="brand-mark">HR</span><span class="brand-text">Hiring Portal</span></a>
+            <a class="brand" href="index.html"><span class="brand-mark">TB</span><span class="brand-text">TalentBridge HR</span></a>
             <nav class="site-nav inline-nav">
                 <a href="index.html">Home</a>
-                <a href="register.html">Register</a>
-                <a href="login.html">Login</a>
+                <a href="register.html">Create profile</a>
+                <a href="login.html">Sign in</a>
             </nav>
         </div>
     </header>
@@ -24,18 +25,40 @@
         <div class="container">
             <section class="surface hpro-page-banner">
                 <div class="hpro-page-banner-copy">
-                    <span class="eyebrow">Active Listings</span>
-                    <h1>Find roles that match your skills</h1>
-                    <p>Search open opportunities by title, location, and skill set. Sign in only when you are ready to apply.</p>
+                    <span class="eyebrow">Verified Openings</span>
+                    <h1>Find roles that match your skills and location preferences</h1>
+                    <p>Review active opportunities, compare role details clearly, and sign in only when you are ready to apply through your candidate profile.</p>
+                    <div class="hero-proof-row">
+                        <span class="hero-proof-pill">Search by title or skill</span>
+                        <span class="hero-proof-pill">Direct HR application flow</span>
+                        <span class="hero-proof-pill">Mobile-friendly experience</span>
+                    </div>
                 </div>
                 <div class="hpro-page-banner-media">
                     <img src="assets/hiring-campaign-2.jpeg" alt="Professional job opportunities banner">
                 </div>
             </section>
+            <section class="jobs-overview-grid">
+                <article class="surface jobs-note-card">
+                    <span class="eyebrow">Search Faster</span>
+                    <h3>Use keywords that matter</h3>
+                    <p>Search by job title, employer, location, or skills to narrow the list quickly.</p>
+                </article>
+                <article class="surface jobs-note-card">
+                    <span class="eyebrow">Apply Better</span>
+                    <h3>One profile for multiple roles</h3>
+                    <p>Your registered details and resume are reused so you do not need to restart from scratch.</p>
+                </article>
+                <article class="surface jobs-note-card">
+                    <span class="eyebrow">Track Progress</span>
+                    <h3>Return to your dashboard anytime</h3>
+                    <p>Once signed in, you can monitor under review, shortlisted, hired, and closed application states.</p>
+                </article>
+            </section>
             <div class="page-head reveal">
                 <span class="eyebrow">Opportunity Board</span>
-                <h2>Browse jobs</h2>
-                <p>Use filters to quickly discover the right role.</p>
+                <h2>Browse active roles</h2>
+                <p>Use search and job-type filters to shortlist the opportunities that fit you best.</p>
             </div>
             <div class="toolbar surface reveal">
                 <input id="job-search" class="search-input" type="text" placeholder="Search by title, location, or skill">
@@ -47,12 +70,23 @@
                 </div>
             </div>
             <div id="jobs-list" class="list-stack"></div>
+            <section class="surface jobs-support-band">
+                <div>
+                    <span class="eyebrow">Need A Stronger Application?</span>
+                    <h3>Complete your candidate profile before applying</h3>
+                    <p>A complete profile with resume, qualification, and skills helps hiring teams review your application more efficiently.</p>
+                </div>
+                <div class="hero-actions">
+                    <a class="btn btn-primary" href="register.html">Create profile</a>
+                    <a class="btn btn-outline" href="login.html#candidate">Candidate sign in</a>
+                </div>
+            </section>
         </div>
     </main>
     <div id="toast-root" class="toast-root"></div>
     <script src="api-config.js?v=20260416h"></script>
-    <script src="supabase-config.js?v=20260420d"></script>
-    <script src="app.js?v=20260420e"></script>
+    <script src="supabase-config.js?v=20260607a"></script>
+    <script src="app.js?v=20260607a"></script>
 </body>
 </html>
 

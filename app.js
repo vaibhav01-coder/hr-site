@@ -773,8 +773,97 @@ function formatDate(value) {
     });
 }
 
+function summarizeText(value, maxLength = 160) {
+    const text = String(value || "").replace(/\s+/g, " ").trim();
+    if (!text) {
+        return "Structured opportunity with direct application review and clearer hiring visibility.";
+    }
+    if (text.length <= maxLength) return text;
+    return `${text.slice(0, Math.max(0, maxLength - 1)).trimEnd()}...`;
+}
+
+function getJobCompanyName(job) {
+    return job?.company_name || "Verified Hiring Partner";
+}
+
+function getJobDepartmentName(job) {
+    return job?.department || "Operations";
+}
+
+function getJobCompensation(job) {
+    return job?.salary_range || "Compensation shared during screening";
+}
+
+function getJobSkills(job) {
+    const skills = Array.isArray(job?.skills_required) ? job.skills_required : parseSkillsInput(job?.skills_required);
+    return skills.map((item) => String(item).trim()).filter(Boolean);
+}
+
+function renderTagList(items, className = "job-tag") {
+    return (Array.isArray(items) ? items : [])
+        .filter(Boolean)
+        .map((item) => `<span class="${className}">${escapeHtml(item)}</span>`)
+        .join("");
+}
+
 function roleHomePage(role) {
     return role === "hr_admin" ? "hr-dashboard.html" : "dashboard.html";
+}
+
+function injectSharedFooter() {
+    if (qs(".site-footer")) return;
+
+    const page = getCurrentPageName();
+    const footerIntro = ADMIN_ONLY_PAGES.has(page)
+        ? "Internal hiring workspace for job publishing, applicant review, and status management."
+        : CANDIDATE_ONLY_PAGES.has(page)
+            ? "Candidate workspace for applications, progress tracking, and faster role discovery."
+            : "Professional hiring platform for public job discovery and structured recruitment workflows.";
+
+    const footer = document.createElement("footer");
+    footer.className = "site-footer";
+    footer.innerHTML = `
+        <div class="container footer-shell">
+            <div class="footer-brand">
+                <a class="brand" href="index.html">
+                    <span class="brand-mark">TB</span>
+                    <span class="brand-text">TalentBridge HR</span>
+                </a>
+                <p>${escapeHtml(footerIntro)}</p>
+            </div>
+            <div class="footer-link-group">
+                <span>Platform</span>
+                <a href="index.html">Home</a>
+                <a href="jobs.html">Jobs</a>
+                <a href="register.html">Create Profile</a>
+                <a href="login.html">Sign In</a>
+            </div>
+            <div class="footer-link-group">
+                <span>Workspace</span>
+                <a href="dashboard.html">Candidate Dashboard</a>
+                <a href="hr-dashboard.html">HR Control Center</a>
+                <a href="hr-applicants.html">Applicants</a>
+            </div>
+            <div class="footer-link-group">
+                <span>Policies</span>
+                <a href="privacy-policy.html">Privacy Policy</a>
+                <a href="terms-of-service.html">Terms of Service</a>
+                <a href="cookie-policy.html">Cookie Policy</a>
+                <a href="application-policy.html">Application Policy</a>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(footer);
+}
+
+function markCurrentNavLink() {
+    const currentPath = window.location.pathname.split("/").filter(Boolean).pop() || "index.html";
+    qsa(".site-nav a[href]").forEach((link) => {
+        const href = String(link.getAttribute("href") || "").trim();
+        if (href && !href.startsWith("#") && href === currentPath) {
+            link.setAttribute("aria-current", "page");
+        }
+    });
 }
 
 function getSession() {
@@ -1796,38 +1885,56 @@ function getJobTypeLabel(jobType) {
 }
 
 function featuredCard(job) {
+    const skills = getJobSkills(job).slice(0, 3);
     return `
-        <article class="card">
-            <div class="card-head">
-                <div><h3>${escapeHtml(job.title)}</h3><p>${escapeHtml(job.company_name || "Company")}</p></div>
+        <article class="card job-card">
+            <div class="card-head job-card-head">
+                <div>
+                    <span class="job-card-kicker">${escapeHtml(getJobDepartmentName(job))}</span>
+                    <h3>${escapeHtml(job.title)}</h3>
+                    <p>${escapeHtml(getJobCompanyName(job))}</p>
+                </div>
                 <span class="status-pill">${escapeHtml(getJobTypeLabel(job.job_type))}</span>
             </div>
-            <div class="summary-list">
-                <div class="summary-item"><span>Location</span><strong>${escapeHtml(job.location || "N/A")}</strong></div>
-                <div class="summary-item"><span>Salary</span><strong>${escapeHtml(job.salary_range || "Discuss in interview")}</strong></div>
+            <p class="job-card-copy">${escapeHtml(summarizeText(job.description, 124))}</p>
+            <div class="job-chip-row">
+                <span class="job-tag">${escapeHtml(job.location || "Location shared on shortlisting")}</span>
+                ${renderTagList(skills, "job-tag job-tag-soft") || '<span class="job-tag job-tag-soft">Role-specific screening</span>'}
             </div>
-            <a class="btn btn-primary full-width" href="job-detail.html?id=${encodeURIComponent(job.id)}">View Detail</a>
+            <div class="summary-list compact-summary-list">
+                <div class="summary-item"><span>Compensation</span><strong>${escapeHtml(getJobCompensation(job))}</strong></div>
+                <div class="summary-item"><span>Posted</span><strong>${escapeHtml(formatDate(job.created_at) === "N/A" ? "Recently updated" : formatDate(job.created_at))}</strong></div>
+            </div>
+            <a class="btn btn-primary full-width" href="job-detail.html?id=${encodeURIComponent(job.id)}">Review role</a>
         </article>
     `;
 }
 
 function jobListCard(job) {
-    const skills = Array.isArray(job.skills_required) ? job.skills_required.join(", ") : "";
+    const skills = getJobSkills(job).slice(0, 4);
     return `
-        <article class="job-list-card">
+        <article class="job-list-card job-list-enhanced">
             <div class="job-list-head">
-                <div><h3>${escapeHtml(job.title)}</h3><p>${escapeHtml(job.company_name || "Company")} - ${escapeHtml(job.department || "General")}</p></div>
+                <div>
+                    <span class="job-card-kicker">${escapeHtml(getJobDepartmentName(job))}</span>
+                    <h3>${escapeHtml(job.title)}</h3>
+                    <p>${escapeHtml(getJobCompanyName(job))} - ${escapeHtml(job.location || "Location to be confirmed")}</p>
+                </div>
                 <span class="status-pill">${escapeHtml(getJobTypeLabel(job.job_type))}</span>
             </div>
-            <div class="summary-list">
+            <p class="job-card-copy">${escapeHtml(summarizeText(job.description, 168))}</p>
+            <div class="job-chip-row">
+                ${renderTagList(skills, "job-tag job-tag-soft") || '<span class="job-tag job-tag-soft">Screening based on role requirements</span>'}
+            </div>
+            <div class="summary-list compact-summary-list">
                 <div class="summary-item"><span>Location</span><strong>${escapeHtml(job.location || "N/A")}</strong></div>
                 <div class="summary-item"><span>Type</span><strong>${escapeHtml(getJobTypeLabel(job.job_type))}</strong></div>
-                <div class="summary-item"><span>Salary</span><strong>${escapeHtml(job.salary_range || "Discuss in interview")}</strong></div>
-                <div class="summary-item"><span>Skills</span><strong>${escapeHtml(skills || "Not specified")}</strong></div>
+                <div class="summary-item"><span>Compensation</span><strong>${escapeHtml(getJobCompensation(job))}</strong></div>
+                <div class="summary-item"><span>Posted</span><strong>${escapeHtml(formatDate(job.created_at) === "N/A" ? "Recently updated" : formatDate(job.created_at))}</strong></div>
             </div>
             <div class="hero-actions">
-                <a class="btn btn-outline" href="job-detail.html?id=${encodeURIComponent(job.id)}">View Detail</a>
-                <a class="btn btn-primary" href="apply.html?id=${encodeURIComponent(job.id)}">Apply Now</a>
+                <a class="btn btn-outline" href="job-detail.html?id=${encodeURIComponent(job.id)}">View detail</a>
+                <a class="btn btn-primary" href="apply.html?id=${encodeURIComponent(job.id)}">Apply now</a>
             </div>
         </article>
     `;
@@ -1863,7 +1970,7 @@ async function renderJobsPage() {
         const query = String(search?.value || "").toLowerCase();
         const filtered = allJobs.filter((job) => {
             const matchesFilter = activeFilter === "all" || job.job_type === activeFilter;
-            const text = `${job.title} ${job.location} ${job.company_name} ${(job.skills_required || []).join(" ")}`.toLowerCase();
+            const text = `${job.title} ${job.location} ${getJobCompanyName(job)} ${getJobSkills(job).join(" ")}`.toLowerCase();
             return matchesFilter && text.includes(query);
         });
 
@@ -1912,37 +2019,88 @@ async function renderJobDetail() {
 
         if (!job) {
             main.innerHTML = "<h2>Job not found</h2><p>Please return to jobs and pick another role.</p>";
-            side.innerHTML = `<a class="btn btn-outline full-width" href="jobs.html">Back to Jobs</a>`;
+            side.innerHTML = `<a class="btn btn-outline full-width" href="jobs.html">Back to jobs</a>`;
             return;
         }
 
-        const skills = Array.isArray(job.skills_required) ? job.skills_required.join(", ") : "Not specified";
+        const skills = getJobSkills(job);
+        const perks = parseSkillsInput(job.perks);
+        const postedLabel = formatDate(job.created_at) === "N/A" ? "Recently updated" : formatDate(job.created_at);
         main.innerHTML = `
-            <span class="eyebrow">Job Detail</span>
-            <h1>${escapeHtml(job.title)}</h1>
-            <p>${escapeHtml(job.company_name || "Company")} - ${escapeHtml(job.department || "General")} - ${escapeHtml(job.location || "N/A")}</p>
-            <div class="summary-list" style="margin-top:20px;">
-                <div class="summary-item"><span>Description</span><strong>${escapeHtml(job.description || "No description available.")}</strong></div>
-                <div class="summary-item"><span>Required Skills</span><strong>${escapeHtml(skills)}</strong></div>
-                <div class="summary-item"><span>Perks</span><strong>${escapeHtml(job.perks || "As per company policy")}</strong></div>
-                <div class="summary-item"><span>Salary Range</span><strong>${escapeHtml(job.salary_range || "Discuss in interview")}</strong></div>
+            <div class="job-title-block">
+                <span class="job-card-kicker">${escapeHtml(getJobDepartmentName(job))}</span>
+                <h1>${escapeHtml(job.title)}</h1>
+                <p class="job-brief">${escapeHtml(summarizeText(job.description, 320))}</p>
+                <div class="job-chip-row">
+                    <span class="job-tag">${escapeHtml(getJobCompanyName(job))}</span>
+                    <span class="job-tag">${escapeHtml(job.location || "Location to be confirmed")}</span>
+                    <span class="job-tag">${escapeHtml(getJobTypeLabel(job.job_type))}</span>
+                    <span class="job-tag">${escapeHtml(getJobCompensation(job))}</span>
+                </div>
+            </div>
+            <div class="detail-panel-grid">
+                <section class="detail-panel">
+                    <h3>Role overview</h3>
+                    <p>${escapeHtml(job.description || "A detailed role summary has not been provided yet. Please use the available job highlights and your application profile for initial review.")}</p>
+                </section>
+                <section class="detail-panel">
+                    <h3>Skills being prioritized</h3>
+                    <div class="job-chip-row">
+                        ${renderTagList(skills, "job-tag job-tag-soft") || '<span class="job-tag job-tag-soft">Skills shared during recruiter screening</span>'}
+                    </div>
+                </section>
+                <section class="detail-panel">
+                    <h3>Compensation and role details</h3>
+                    <div class="summary-list compact-summary-list">
+                        <div class="summary-item"><span>Company</span><strong>${escapeHtml(getJobCompanyName(job))}</strong></div>
+                        <div class="summary-item"><span>Department</span><strong>${escapeHtml(getJobDepartmentName(job))}</strong></div>
+                        <div class="summary-item"><span>Compensation</span><strong>${escapeHtml(getJobCompensation(job))}</strong></div>
+                        <div class="summary-item"><span>Posted</span><strong>${escapeHtml(postedLabel)}</strong></div>
+                    </div>
+                </section>
+                <section class="detail-panel">
+                    <h3>Perks and candidate expectations</h3>
+                    <div class="job-chip-row">
+                        ${renderTagList(perks, "job-tag job-tag-soft") || '<span class="job-tag job-tag-soft">As per company policy</span>'}
+                    </div>
+                    <ul class="bullet-list">
+                        <li>Apply with your registered candidate profile and resume.</li>
+                        <li>Keep phone, qualification, and experience details accurate for screening.</li>
+                        <li>Track next-stage updates from the candidate dashboard after submission.</li>
+                    </ul>
+                </section>
             </div>
         `;
         side.innerHTML = `
-            <span class="eyebrow">Quick Summary</span>
-            <div class="summary-list">
-                <div class="summary-item"><span>Job Type</span><strong>${escapeHtml(getJobTypeLabel(job.job_type))}</strong></div>
-                <div class="summary-item"><span>Status</span><strong>${job.is_active ? "Open" : "Closed"}</strong></div>
-                <div class="summary-item"><span>Posted By</span><strong>HR Admin</strong></div>
+            <div class="detail-sidebar-card">
+                <span class="eyebrow">Quick Summary</span>
+                <div class="detail-meta-grid">
+                    <div class="detail-meta-item"><span>Job type</span><strong>${escapeHtml(getJobTypeLabel(job.job_type))}</strong></div>
+                    <div class="detail-meta-item"><span>Status</span><strong>${job.is_active ? "Open for applications" : "Currently closed"}</strong></div>
+                    <div class="detail-meta-item"><span>Department</span><strong>${escapeHtml(getJobDepartmentName(job))}</strong></div>
+                    <div class="detail-meta-item"><span>Review flow</span><strong>Admin screening</strong></div>
+                </div>
+                <div class="hero-actions" style="margin-top:18px;">
+                    <a class="btn btn-primary full-width" href="apply.html?id=${encodeURIComponent(job.id)}">Apply now</a>
+                    <a class="btn btn-outline full-width" href="jobs.html">Back to jobs</a>
+                </div>
             </div>
-            <div class="hero-actions" style="margin-top:18px;">
-                <a class="btn btn-primary full-width" href="apply.html?id=${encodeURIComponent(job.id)}">Apply Now</a>
-                <a class="btn btn-outline full-width" href="jobs.html">Back to Jobs</a>
+            <div class="detail-sidebar-card">
+                <span class="eyebrow">Application Guidance</span>
+                <p>Use a complete profile with resume, contact details, and current experience so HR can review your application without delay.</p>
+                <div class="hero-proof-row">
+                    <span class="hero-proof-pill">Profile required</span>
+                    <span class="hero-proof-pill">Resume linked</span>
+                </div>
             </div>
         `;
     } catch (error) {
         main.innerHTML = `<h2>Unable to load job</h2><p>${escapeHtml(error.message)}</p>`;
-        side.innerHTML = `<a class="btn btn-outline full-width" href="jobs.html">Back to Jobs</a>`;
+        side.innerHTML = `
+            <div class="detail-sidebar-card">
+                <a class="btn btn-outline full-width" href="jobs.html">Back to jobs</a>
+            </div>
+        `;
     }
 }
 
@@ -2015,11 +2173,13 @@ async function setupApplyPage(currentUser) {
         const selectedJobId = params().get("id");
         const selectedJob = jobs.find((job) => job.id === selectedJobId) || jobs[0];
 
-        subtitle.textContent = `${selectedJob.title} - ${selectedJob.company_name || "Company"}`;
+        subtitle.textContent = `${selectedJob.title} at ${getJobCompanyName(selectedJob)}`;
         summary.innerHTML = `
             <div class="summary-item"><span>Role</span><strong>${escapeHtml(selectedJob.title)}</strong></div>
-            <div class="summary-item"><span>Company</span><strong>${escapeHtml(selectedJob.company_name || "Company")}</strong></div>
+            <div class="summary-item"><span>Company</span><strong>${escapeHtml(getJobCompanyName(selectedJob))}</strong></div>
             <div class="summary-item"><span>Location</span><strong>${escapeHtml(selectedJob.location || "N/A")}</strong></div>
+            <div class="summary-item"><span>Type</span><strong>${escapeHtml(getJobTypeLabel(selectedJob.job_type))}</strong></div>
+            <div class="summary-item"><span>Compensation</span><strong>${escapeHtml(getJobCompensation(selectedJob))}</strong></div>
             <div class="summary-item"><span>Status</span><strong>Open for application</strong></div>
         `;
 
@@ -2158,7 +2318,7 @@ async function renderCandidateDashboard(currentUser) {
                     <div class="card-head">
                         <div>
                             <h3>${escapeHtml(job?.title || "Job")}</h3>
-                            <p>${escapeHtml(job?.company_name || "Company")} - ${escapeHtml(job?.location || "N/A")}</p>
+                            <p>${escapeHtml(getJobCompanyName(job))} - ${escapeHtml(job?.location || "N/A")}</p>
                         </div>
                         <span class="status-pill">${escapeHtml(formatStatus(item.status))}</span>
                     </div>
@@ -2316,17 +2476,20 @@ async function renderHrDashboard() {
 
         if (jobsList) {
             jobsList.innerHTML = jobs.map((job) => `
-                <article class="job-list-card">
+                <article class="job-list-card job-list-enhanced">
                     <div class="job-list-head">
                         <div>
+                            <span class="job-card-kicker">${escapeHtml(getJobDepartmentName(job))}</span>
                             <h3>${escapeHtml(job.title)}</h3>
-                            <p>${escapeHtml(job.company_name || "Company")} - ${escapeHtml(job.location || "N/A")}</p>
+                            <p>${escapeHtml(getJobCompanyName(job))} - ${escapeHtml(job.location || "N/A")}</p>
                         </div>
                         <span class="status-pill">${countByJobId.get(job.id) || 0} applicants</span>
                     </div>
-                    <div class="summary-list">
+                    <p class="job-card-copy">${escapeHtml(summarizeText(job.description, 168))}</p>
+                    <div class="summary-list compact-summary-list">
                         <div class="summary-item"><span>Department</span><strong>${escapeHtml(job.department || "General")}</strong></div>
                         <div class="summary-item"><span>Type</span><strong>${escapeHtml(getJobTypeLabel(job.job_type))}</strong></div>
+                        <div class="summary-item"><span>Compensation</span><strong>${escapeHtml(getJobCompensation(job))}</strong></div>
                         <div class="summary-item"><span>Active</span><strong>${job.is_active ? "Yes" : "No"}</strong></div>
                     </div>
                     <div class="hero-actions">
@@ -2383,7 +2546,7 @@ async function renderHrDashboard() {
                         <td>${escapeHtml(contact || "N/A")}</td>
                         <td>
                             <strong>${escapeHtml(job?.title || "Job")}</strong>
-                            <div class="muted-text">${escapeHtml(job?.company_name || "Company")}</div>
+                            <div class="muted-text">${escapeHtml(getJobCompanyName(job))}</div>
                         </td>
                         <td>${escapeHtml(formatDate(item.created_at))}</td>
                         <td><span class="status-pill">${escapeHtml(formatStatus(item.status))}</span></td>
@@ -2877,6 +3040,8 @@ async function init() {
     initLogoutActions();
     initDynamicRoleCards();
     initAuthForms();
+    injectSharedFooter();
+    markCurrentNavLink();
 
     const page = getCurrentPageName();
     const currentUser = await enforceRoleAccess();
@@ -2899,4 +3064,3 @@ init().catch((error) => {
     console.error(error);
     toast(formatToastMessage(error));
 });
-

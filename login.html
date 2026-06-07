@@ -3,29 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In | HR Hiring Portal</title>
-    <meta name="description" content="Sign in as candidate or administrator.">
+    <title>Sign In | TalentBridge HR</title>
+    <meta name="description" content="Secure sign-in for candidates and administrators on the TalentBridge HR hiring platform.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260420d">
+    <link rel="stylesheet" href="styles.css?v=20260607a">
 </head>
 <body data-page="login">
     <main class="auth-shell">
         <div class="hpro-auth-layout">
             <section class="surface auth-card auth-flow-card">
+                <div class="auth-brand-lockup">
+                    <a class="brand" href="index.html"><span class="brand-mark">TB</span><span class="brand-text">TalentBridge HR</span></a>
+                    <span class="auth-brand-note">Secure access for candidates and hiring teams</span>
+                </div>
                 <div id="auth-step-role" class="auth-step">
                     <span class="eyebrow">Sign In</span>
                     <h1>Welcome back</h1>
-                    <p class="auth-lead">Choose your workspace to continue with secure access.</p>
+                    <p class="auth-lead">Choose the right workspace to continue with secure access and a clearer hiring workflow.</p>
+                    <div class="auth-trust-row">
+                        <span class="trust-badge">Candidate dashboard</span>
+                        <span class="trust-badge">Resume-backed apply flow</span>
+                        <span class="trust-badge">Admin review controls</span>
+                    </div>
                     <div class="role-choice-grid">
                         <button type="button" class="role-choice-btn" id="btn-choose-candidate">
                             <strong>Candidate</strong>
-                            <span>Track applications and apply for jobs</span>
+                            <span>Track applications, review roles, and apply with your profile</span>
                         </button>
                         <button type="button" class="role-choice-btn" id="btn-choose-admin">
                             <strong>Administrator</strong>
-                            <span>Review applicants and manage job posts</span>
+                            <span>Manage jobs, review applicants, and update hiring status</span>
                         </button>
                     </div>
                     <p class="muted-line"><a href="index.html">Back to home</a></p>
@@ -34,7 +43,7 @@
                 <div id="auth-step-candidate" class="auth-step is-hidden">
                     <button type="button" class="text-back" id="btn-back-candidate">Back to role selection</button>
                     <h2>Candidate Sign In</h2>
-                    <p class="auth-lead">Use your registered email and password to continue.</p>
+                    <p class="auth-lead">Use your registered email and password to continue to your application workspace.</p>
                     <form id="candidate-login-form" class="auth-form" autocomplete="on">
                         <label class="field">
                             <span>Email Address</span>
@@ -53,7 +62,7 @@
                 <div id="auth-step-admin" class="auth-step is-hidden">
                     <button type="button" class="text-back" id="btn-back-admin">Back to role selection</button>
                     <h2>Admin Sign In</h2>
-                    <p class="auth-lead">Sign in with your authorized admin credentials.</p>
+                    <p class="auth-lead">Sign in with authorized admin credentials to access the hiring operations workspace.</p>
                     <form id="admin-login-form" class="auth-form" autocomplete="on">
                         <label class="field">
                             <span>Admin ID or Email</span>
@@ -74,11 +83,10 @@
 
     <div id="toast-root" class="toast-root"></div>
     <script src="api-config.js?v=20260416h"></script>
-    <script src="supabase-config.js?v=20260420d"></script>
-    <script src="app.js?v=20260420e"></script>
+    <script src="supabase-config.js?v=20260607a"></script>
+    <script src="app.js?v=20260607a"></script>
 </body>
 </html>
-
 
 
 

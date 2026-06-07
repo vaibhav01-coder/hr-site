@@ -3,20 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register | HR Hiring Portal</title>
-    <meta name="description" content="Candidate registration with full details and resume upload.">
+    <title>Create Account | TalentBridge HR</title>
+    <meta name="description" content="Create a TalentBridge HR candidate profile with contact details, experience, skills, and resume upload.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260420d">
+    <link rel="stylesheet" href="styles.css?v=20260607a">
 </head>
 <body data-page="register">
     <main class="auth-shell">
         <div class="hpro-auth-layout hpro-auth-layout-wide">
             <section class="surface auth-card auth-card-wide">
+                <div class="auth-brand-lockup">
+                    <a class="brand" href="index.html"><span class="brand-mark">TB</span><span class="brand-text">TalentBridge HR</span></a>
+                    <span class="auth-brand-note">Complete your profile once and apply more professionally</span>
+                </div>
                 <span class="eyebrow">Candidate Registration</span>
                 <h1>Create your account</h1>
-                <p class="auth-lead">Complete your profile once to apply faster for every job.</p>
+                <p class="auth-lead">Complete your profile once to apply faster for every role and keep your application details ready for HR review.</p>
+                <div class="auth-trust-row">
+                    <span class="trust-badge">Resume upload</span>
+                    <span class="trust-badge">Profile-based applications</span>
+                    <span class="trust-badge">Dashboard tracking</span>
+                </div>
 
                 <form id="register-form" class="auth-form" enctype="multipart/form-data" novalidate>
                     <div class="auth-section-title">Basic Information</div>
@@ -93,7 +102,7 @@
                     <button id="register-submit" type="submit" class="btn btn-primary full-width">Register</button>
                 </form>
 
-                <p class="login-status-line" id="register-status">Fill required fields and submit.</p>
+                <p class="login-status-line" id="register-status">Fill the required fields, upload your resume, and submit your profile.</p>
                 <p class="muted-line">Already registered? <a href="login.html#candidate">Sign in</a></p>
             </section>
         </div>
@@ -101,11 +110,10 @@
 
     <div id="toast-root" class="toast-root"></div>
     <script src="api-config.js?v=20260416h"></script>
-    <script src="supabase-config.js?v=20260420d"></script>
-    <script src="app.js?v=20260420e"></script>
+    <script src="supabase-config.js?v=20260607a"></script>
+    <script src="app.js?v=20260607a"></script>
 </body>
 </html>
-
 
 
 

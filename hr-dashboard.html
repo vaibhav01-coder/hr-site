@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel | HR Hiring Portal</title>
+    <title>HR Control Center | TalentBridge HR</title>
+    <meta name="description" content="Manage job listings, review applicants, and update hiring status from the TalentBridge HR admin workspace.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260420d">
+    <link rel="stylesheet" href="styles.css?v=20260607a">
 </head>
 <body data-page="hr-dashboard" class="admin-shell">
     <header class="site-header slim">
         <div class="container nav-wrap">
-            <a class="brand" href="index.html"><span class="brand-mark">HR</span><span class="brand-text">Hiring Portal</span></a>
+            <a class="brand" href="index.html"><span class="brand-mark">TB</span><span class="brand-text">TalentBridge HR</span></a>
             <nav class="site-nav inline-nav">
                 <a href="jobs.html">Public jobs</a>
                 <a href="hr-applicants.html">All applicants</a>
@@ -39,6 +40,26 @@
                     <p>Post roles, review resumes, and update candidate status from one workspace.</p>
                 </div>
             </div>
+            <section class="admin-quick-grid">
+                <article class="surface admin-quick-card">
+                    <span class="eyebrow">Quick Action</span>
+                    <h3>Review active jobs</h3>
+                    <p>See every published opening with applicant counts and hiring context.</p>
+                    <button type="button" class="btn btn-outline btn-sm" data-hr-tab-jump="jobs">Open jobs tab</button>
+                </article>
+                <article class="surface admin-quick-card">
+                    <span class="eyebrow">Quick Action</span>
+                    <h3>Filter incoming applicants</h3>
+                    <p>Search candidates, narrow by status, and update progress without leaving the dashboard.</p>
+                    <button type="button" class="btn btn-outline btn-sm" data-hr-tab-jump="applicants">Open applicants tab</button>
+                </article>
+                <article class="surface admin-quick-card">
+                    <span class="eyebrow">Quick Action</span>
+                    <h3>Create a new listing</h3>
+                    <p>Publish a new role with location, compensation, skills, and description in minutes.</p>
+                    <button type="button" class="btn btn-outline btn-sm" data-hr-tab-jump="create">Open create tab</button>
+                </article>
+            </section>
 
             <div class="admin-stats" aria-live="polite">
                 <div class="admin-stat">
@@ -52,6 +73,14 @@
                 <div class="admin-stat">
                     <strong id="admin-stat-pending">-</strong>
                     <span>Under review</span>
+                </div>
+                <div class="admin-stat">
+                    <strong id="admin-stat-shortlisted">-</strong>
+                    <span>Shortlisted</span>
+                </div>
+                <div class="admin-stat">
+                    <strong id="admin-stat-closed">-</strong>
+                    <span>Closed</span>
                 </div>
             </div>
 
@@ -70,6 +99,17 @@
                 <div id="hr-jobs-list" class="list-stack"></div>
             </section>
             <section class="tab-panel" id="hr-tab-applicants" role="tabpanel">
+                <div class="surface admin-filter-bar">
+                    <input id="admin-applicant-search" class="search-input" type="text" placeholder="Search by candidate, contact, job title, or company">
+                    <select id="admin-applicant-status" class="status-select">
+                        <option value="all">All statuses</option>
+                        <option value="under_review">Under Review</option>
+                        <option value="shortlisted">Shortlisted</option>
+                        <option value="hired">Hired</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    <div id="admin-applicant-result-count" class="admin-filter-count">0 applicants</div>
+                </div>
                 <div class="surface table-wrap">
                     <table class="table">
                         <thead>
@@ -115,11 +155,10 @@
     </main>
     <div id="toast-root" class="toast-root"></div>
     <script src="api-config.js?v=20260416h"></script>
-    <script src="supabase-config.js?v=20260420d"></script>
-    <script src="app.js?v=20260420e"></script>
+    <script src="supabase-config.js?v=20260607a"></script>
+    <script src="app.js?v=20260607a"></script>
 </body>
 </html>
-
 
 
 

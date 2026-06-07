@@ -3,28 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Application Policy | HR Hiring Portal</title>
+    <title>Application Policy | TalentBridge HR</title>
+    <meta name="description" content="Understand how applications are submitted, reviewed, and processed on TalentBridge HR.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260420d">
+    <link rel="stylesheet" href="styles.css?v=20260607a">
 </head>
 <body data-page="legal">
-    <main class="legal-shell">
-        <section class="surface legal-card">
-            <span class="eyebrow">Application Policy</span>
-            <h1>How direct applications are handled</h1>
-            <ul class="legal-list">
-                <li>Applications can be submitted directly without any extra checkout step.</li>
-                <li>HR reviews each profile based on role requirements and document completeness.</li>
-                <li>Candidates may be contacted by phone or email for the next stage.</li>
-                <li>Incomplete or misleading applications may be closed by HR.</li>
-            </ul>
-            <a class="btn btn-primary" href="index.html">Back Home</a>
-        </section>
+    <header class="site-header slim">
+        <div class="container nav-wrap">
+            <a class="brand" href="index.html"><span class="brand-mark">TB</span><span class="brand-text">TalentBridge HR</span></a>
+            <nav class="site-nav inline-nav">
+                <a href="index.html">Home</a>
+                <a href="jobs.html">Jobs</a>
+                <a href="login.html">Sign in</a>
+            </nav>
+        </div>
+    </header>
+    <main class="section hpro-page-space legal-page-shell">
+        <div class="container narrow legal-stack">
+            <section class="surface legal-hero">
+                <span class="eyebrow">Application Policy</span>
+                <h1>How applications are reviewed and processed</h1>
+                <p>TalentBridge HR is designed to support direct candidate applications and structured HR review without hidden steps or unclear process changes.</p>
+            </section>
+            <section class="surface legal-card legal-card-wide">
+                <div class="legal-block">
+                    <h3>What candidates should expect</h3>
+                    <ul class="legal-list">
+                        <li>Applications are submitted directly through the platform using the candidate's registered profile and resume.</li>
+                        <li>Each role is reviewed based on relevant experience, document completeness, and role fit.</li>
+                        <li>Hiring teams may contact candidates by phone or email for screening, interview scheduling, or document clarification.</li>
+                        <li>Incomplete, duplicate, or misleading applications may be closed without progression.</li>
+                    </ul>
+                </div>
+                <div class="legal-actions">
+                    <a class="btn btn-primary" href="jobs.html">Browse jobs</a>
+                    <a class="btn btn-outline" href="index.html">Back home</a>
+                </div>
+            </section>
+        </div>
     </main>
-    <script src="supabase-config.js?v=20260420d"></script>
-    <script src="app.js?v=20260420e"></script>
+    <div id="toast-root" class="toast-root"></div>
+    <script src="supabase-config.js?v=20260607a"></script>
+    <script src="app.js?v=20260607a"></script>
 </body>
 </html>
 

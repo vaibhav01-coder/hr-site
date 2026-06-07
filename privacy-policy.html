@@ -3,28 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy | HR Hiring Portal</title>
+    <title>Privacy Policy | TalentBridge HR</title>
+    <meta name="description" content="Learn how TalentBridge HR collects, stores, and uses candidate and recruitment data.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260420d">
+    <link rel="stylesheet" href="styles.css?v=20260607a">
 </head>
 <body data-page="legal">
-    <main class="legal-shell">
-        <section class="surface legal-card">
-            <span class="eyebrow">Privacy Policy</span>
-            <h1>How data is collected and used</h1>
-            <ul class="legal-list">
-                <li>We collect personal, professional, and resume information shared in the application flow.</li>
-                <li>Application data is used only for recruitment, status updates, and HR communication.</li>
-                <li>Uploaded resumes are stored securely in Supabase storage for hiring review.</li>
-                <li>Candidates can request deletion and access based on privacy rights.</li>
-            </ul>
-            <a class="btn btn-primary" href="index.html">Back Home</a>
-        </section>
+    <header class="site-header slim">
+        <div class="container nav-wrap">
+            <a class="brand" href="index.html"><span class="brand-mark">TB</span><span class="brand-text">TalentBridge HR</span></a>
+            <nav class="site-nav inline-nav">
+                <a href="index.html">Home</a>
+                <a href="jobs.html">Jobs</a>
+                <a href="login.html">Sign in</a>
+            </nav>
+        </div>
+    </header>
+    <main class="section hpro-page-space legal-page-shell">
+        <div class="container narrow legal-stack">
+            <section class="surface legal-hero">
+                <span class="eyebrow">Privacy Policy</span>
+                <h1>How candidate and recruitment data is handled</h1>
+                <p>We collect only the information required to support registration, applications, hiring review, and follow-up communication inside the platform.</p>
+            </section>
+            <section class="surface legal-card legal-card-wide">
+                <div class="legal-block">
+                    <h3>Data use principles</h3>
+                    <ul class="legal-list">
+                        <li>We collect personal, professional, and resume information submitted during registration and application flows.</li>
+                        <li>Application data is used only for recruitment operations, status updates, and communication between candidates and hiring teams.</li>
+                        <li>Uploaded resumes are stored in platform-connected storage for authorized hiring review.</li>
+                        <li>Candidates may request access, correction, or deletion of their information subject to operational and legal requirements.</li>
+                    </ul>
+                </div>
+                <div class="legal-actions">
+                    <a class="btn btn-primary" href="register.html">Create profile</a>
+                    <a class="btn btn-outline" href="index.html">Back home</a>
+                </div>
+            </section>
+        </div>
     </main>
-    <script src="supabase-config.js?v=20260420d"></script>
-    <script src="app.js?v=20260420e"></script>
+    <div id="toast-root" class="toast-root"></div>
+    <script src="supabase-config.js?v=20260607a"></script>
+    <script src="app.js?v=20260607a"></script>
 </body>
 </html>
 

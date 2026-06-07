@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | HR Hiring Portal</title>
+    <title>Candidate Dashboard | TalentBridge HR</title>
+    <meta name="description" content="Track applications, review progress, and return to active roles from your TalentBridge HR candidate dashboard.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260420d">
+    <link rel="stylesheet" href="styles.css?v=20260607a">
 </head>
 <body data-page="dashboard">
     <header class="site-header slim">
         <div class="container nav-wrap">
-            <a class="brand" href="index.html"><span class="brand-mark">HR</span><span class="brand-text">Hiring Portal</span></a>
+            <a class="brand" href="index.html"><span class="brand-mark">TB</span><span class="brand-text">TalentBridge HR</span></a>
             <nav class="site-nav inline-nav">
                 <a href="jobs.html">Jobs</a>
                 <a href="apply.html">Apply</a>
-                <a href="#" data-logout>Logout</a>
+                <a href="#" data-logout>Sign out</a>
             </nav>
         </div>
     </header>
@@ -26,7 +27,7 @@
                 <div class="hpro-page-banner-copy">
                     <span class="eyebrow">Candidate Dashboard</span>
                     <h1 id="candidate-greeting">Track every application clearly</h1>
-                    <p>See progress, review submitted roles, and move quickly to new opportunities.</p>
+                    <p>Review progress, revisit submitted roles, and move faster toward the next opportunity with a cleaner application history.</p>
                 </div>
                 <div class="hpro-page-banner-media">
                     <img src="assets/hiring-campaign-2.jpeg" alt="Candidate dashboard banner">
@@ -35,12 +36,16 @@
             <div class="page-head">
                 <span class="eyebrow">Your Workspace</span>
                 <h2>Application overview</h2>
-                <p>Real-time status across all applications submitted from your account.</p>
+                <p>Real-time visibility across every role you have applied for from this account.</p>
+                <div class="hero-actions">
+                    <a class="btn btn-primary" href="jobs.html">Browse active roles</a>
+                    <a class="btn btn-outline" href="apply.html">Start an application</a>
+                </div>
             </div>
             <div class="grid role-cards">
                 <article class="surface role-card">
                     <h3>Track Applications</h3>
-                    <p>See under review, shortlisted, hired, and refund progress in one place.</p>
+                    <p>See under review, shortlisted, hired, and closed outcomes in one place.</p>
                 </article>
                 <article class="surface role-card">
                     <h3>Manage Profile</h3>
@@ -62,8 +67,8 @@
     </main>
     <div id="toast-root" class="toast-root"></div>
     <script src="api-config.js?v=20260416h"></script>
-    <script src="supabase-config.js?v=20260420d"></script>
-    <script src="app.js?v=20260420e"></script>
+    <script src="supabase-config.js?v=20260607a"></script>
+    <script src="app.js?v=20260607a"></script>
 </body>
 </html>
 

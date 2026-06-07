@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Applicants | HR Hiring Portal</title>
+    <title>Applicants | TalentBridge HR</title>
+    <meta name="description" content="Review applicants, resumes, and hiring status for a selected role inside TalentBridge HR.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260420d">
+    <link rel="stylesheet" href="styles.css?v=20260607a">
 </head>
 <body data-page="hr-applicants">
     <header class="site-header slim">
         <div class="container nav-wrap">
-            <a class="brand" href="index.html"><span class="brand-mark">HR</span><span class="brand-text">Hiring Portal</span></a>
+            <a class="brand" href="index.html"><span class="brand-mark">TB</span><span class="brand-text">TalentBridge HR</span></a>
             <nav class="site-nav inline-nav">
                 <a href="hr-dashboard.html">Back to HR Dashboard</a>
-                <a href="#" data-logout>Logout</a>
+                <a href="#" data-logout>Sign out</a>
             </nav>
         </div>
     </header>
@@ -34,7 +35,7 @@
             <div class="page-head" style="margin-bottom:14px;">
                 <span class="eyebrow">Review Table</span>
                 <h2>Applicant records</h2>
-                <p>Filter and review candidate resume details efficiently.</p>
+                <p>Review candidate records, experience, resumes, and status for the selected role in one place.</p>
             </div>
             <div class="surface table-wrap">
                 <table class="table">
@@ -50,12 +51,24 @@
                     <tbody id="job-applicant-rows"></tbody>
                 </table>
             </div>
+            <section class="applicant-support-grid">
+                <article class="surface detail-support-card">
+                    <span class="eyebrow">Review Standard</span>
+                    <h3>Use experience and resume quality together</h3>
+                    <p>Compare qualification, current role, and resume completeness before moving a candidate to the next stage.</p>
+                </article>
+                <article class="surface detail-support-card">
+                    <span class="eyebrow">Status Discipline</span>
+                    <h3>Keep updates visible and timely</h3>
+                    <p>Clear status updates reduce candidate confusion and help the dashboard remain useful after submission.</p>
+                </article>
+            </section>
         </div>
     </main>
     <div id="toast-root" class="toast-root"></div>
     <script src="api-config.js?v=20260416h"></script>
-    <script src="supabase-config.js?v=20260420d"></script>
-    <script src="app.js?v=20260420e"></script>
+    <script src="supabase-config.js?v=20260607a"></script>
+    <script src="app.js?v=20260607a"></script>
 </body>
 </html>
 
