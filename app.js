@@ -1836,7 +1836,23 @@ function initMenu() {
     const toggle = qs("#menu-toggle");
     const nav = qs("#site-nav");
     if (!toggle || !nav) return;
-    toggle.addEventListener("click", () => nav.classList.toggle("open"));
+
+    const setOpen = (open) => {
+        nav.classList.toggle("open", open);
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+        toggle.textContent = open ? "Close" : "Menu";
+    };
+
+    toggle.addEventListener("click", () => setOpen(!nav.classList.contains("open")));
+
+    qsa("#site-nav a").forEach((link) => {
+        link.addEventListener("click", () => setOpen(false));
+    });
+
+    window.addEventListener("resize", () => {
+        if (window.innerWidth > 768) setOpen(false);
+    });
 }
 
 function initRevealAnimations() {

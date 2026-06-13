@@ -8,13 +8,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260607a">
+    <link rel="stylesheet" href="styles.css?v=20260613a">
 </head>
 <body data-page="job-detail">
     <header class="site-header slim">
         <div class="container nav-wrap">
             <a class="brand" href="index.html"><span class="brand-mark">TB</span><span class="brand-text">TalentBridge HR</span></a>
-            <nav class="site-nav inline-nav">
+            <button type="button" class="menu-toggle" id="menu-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">Menu</button>
+            <nav class="site-nav inline-nav" id="site-nav">
                 <a href="jobs.html">Back to Jobs</a>
                 <a href="register.html">Create profile</a>
                 <a href="login.html">Sign in</a>
@@ -51,6 +52,37 @@
             </section>
         </div>
     </main>
+
+    <footer class="site-footer">
+        <div class="container footer-shell">
+            <div class="footer-brand">
+                <a class="brand" href="index.html">
+                    <span class="brand-mark">TB</span>
+                    <span class="brand-text">TalentBridge HR</span>
+                </a>
+                <p>Structured hiring for manufacturing, logistics, and operations teams.</p>
+            </div>
+            <div class="footer-link-group">
+                <span>Platform</span>
+                <a href="jobs.html">Open roles</a>
+                <a href="register.html">Create profile</a>
+                <a href="login.html">Sign in</a>
+            </div>
+            <div class="footer-link-group">
+                <span>For Employers</span>
+                <a href="login.html#admin">Admin workspace</a>
+                <a href="index.html#process">Hiring process</a>
+            </div>
+            <div class="footer-link-group">
+                <span>Legal</span>
+                <a href="privacy-policy.html">Privacy policy</a>
+                <a href="terms-of-service.html">Terms of service</a>
+                <a href="cookie-policy.html">Cookie policy</a>
+                <a href="application-policy.html">Application policy</a>
+            </div>
+        </div>
+    </footer>
+
     <div id="toast-root" class="toast-root"></div>
     <script src="api-config.js?v=20260416h"></script>
     <script src="supabase-config.js?v=20260607a"></script>

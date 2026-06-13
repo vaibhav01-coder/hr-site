@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260607a">
+    <link rel="stylesheet" href="styles.css?v=20260613a">
 </head>
 <body data-page="home">
     <div class="announcement-strip">
@@ -23,7 +23,8 @@
                 <span class="brand-mark">TB</span>
                 <span class="brand-text">TalentBridge HR</span>
             </a>
-            <nav class="site-nav inline-nav">
+            <button type="button" class="menu-toggle" id="menu-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">Menu</button>
+            <nav class="site-nav inline-nav" id="site-nav">
                 <a href="#employers">Employers</a>
                 <a href="#process">Process</a>
                 <a href="jobs.html">Jobs</a>
@@ -70,28 +71,45 @@
                     </div>
                 </div>
                 <div class="hpro-hero-media hpro-hero-media-stack">
-                    <img src="assets/hiring-campaign.jpeg" alt="Professional hiring campaign banner">
-                    <div class="hero-spotlight">
-                        <span class="hero-spotlight-label">Platform Workflow</span>
-                        <div class="hero-spotlight-grid">
-                            <div class="hero-spotlight-card">
-                                <strong>01</strong>
-                                <span>Create profile</span>
-                            </div>
-                            <div class="hero-spotlight-card">
-                                <strong>02</strong>
-                                <span>Review matching roles</span>
-                            </div>
-                            <div class="hero-spotlight-card">
-                                <strong>03</strong>
-                                <span>Submit with resume</span>
-                            </div>
-                            <div class="hero-spotlight-card">
-                                <strong>04</strong>
-                                <span>Track hiring status</span>
-                            </div>
-                        </div>
+                    <div class="hero-media-frame">
+                        <img src="assets/hiring-campaign.jpeg" alt="Hiring team reviewing candidate applications">
                     </div>
+                    <aside class="hero-workflow-panel" aria-label="Candidate workflow">
+                        <div class="hero-workflow-head">
+                            <span class="eyebrow">Platform Workflow</span>
+                            <p>From first registration to live hiring updates — four clear steps.</p>
+                        </div>
+                        <ol class="hero-workflow-steps">
+                            <li class="hero-workflow-step">
+                                <span class="hero-workflow-num">01</span>
+                                <div>
+                                    <strong>Create profile</strong>
+                                    <span>Register once with resume, skills, and contact details.</span>
+                                </div>
+                            </li>
+                            <li class="hero-workflow-step">
+                                <span class="hero-workflow-num">02</span>
+                                <div>
+                                    <strong>Review matching roles</strong>
+                                    <span>Browse verified openings by location, department, and skill.</span>
+                                </div>
+                            </li>
+                            <li class="hero-workflow-step">
+                                <span class="hero-workflow-num">03</span>
+                                <div>
+                                    <strong>Submit with resume</strong>
+                                    <span>Apply in minutes using your saved profile and documents.</span>
+                                </div>
+                            </li>
+                            <li class="hero-workflow-step">
+                                <span class="hero-workflow-num">04</span>
+                                <div>
+                                    <strong>Track hiring status</strong>
+                                    <span>Monitor under review, shortlisted, hired, or closed stages.</span>
+                                </div>
+                            </li>
+                        </ol>
+                    </aside>
                 </div>
             </section>
 
@@ -238,6 +256,36 @@
             </section>
         </div>
     </main>
+
+    <footer class="site-footer">
+        <div class="container footer-shell">
+            <div class="footer-brand">
+                <a class="brand" href="index.html">
+                    <span class="brand-mark">TB</span>
+                    <span class="brand-text">TalentBridge HR</span>
+                </a>
+                <p>Structured hiring for manufacturing, logistics, and operations teams.</p>
+            </div>
+            <div class="footer-link-group">
+                <span>Platform</span>
+                <a href="jobs.html">Open roles</a>
+                <a href="register.html">Create profile</a>
+                <a href="login.html">Sign in</a>
+            </div>
+            <div class="footer-link-group">
+                <span>For Employers</span>
+                <a href="login.html#admin">Admin workspace</a>
+                <a href="index.html#process">Hiring process</a>
+            </div>
+            <div class="footer-link-group">
+                <span>Legal</span>
+                <a href="privacy-policy.html">Privacy policy</a>
+                <a href="terms-of-service.html">Terms of service</a>
+                <a href="cookie-policy.html">Cookie policy</a>
+                <a href="application-policy.html">Application policy</a>
+            </div>
+        </div>
+    </footer>
 
     <div id="toast-root" class="toast-root"></div>
     <script>
